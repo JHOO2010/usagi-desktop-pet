@@ -65,7 +65,7 @@ partial class Usagi : Form {
     double autoHopIn=5.5,walkSoundIn=2.5,sleepSoundIn;
     System.Drawing.Point lastCursor,dragStart; double x,y,t,lastTick,idleTime,stateTime,decisionTime=2.5;
     double speed,targetSpeed=64,walkDistance,hopHeight,hopVelocity,fallVelocity,landing,heartTime,speechTime=2.8,nextSpeechTime=8.5,curiosityCooldown;
-    float scale=1,petTop=145; string words="야하!";
+    float scale=1,petTop=145,walkingSpeechHeight; string words="야하!";
     readonly string[] walkPhrases={"야하!","야핫!","우라!","우라라!","푸루야!","푸루루루!","야하~"};
     readonly string[] idlePhrases={"…하아?","후웅?","후우웅~","…우라.","야하.","푸루야!"};
     readonly string[] softPhrases={"후웅~","야하.","푸루야!","야핫!","…우라."};
@@ -214,7 +214,11 @@ partial class Usagi : Form {
         var saved=g.Save();g.TranslateTransform(Width/2,bottom);g.RotateTransform(angle);g.ScaleTransform(1+squash,1-squash);if(mood==Mood.Trip||mood==Mood.Recover)DrawStumble(g);else if(mood==Mood.Eat)DrawEatingSprites(g);else g.DrawImage(pose,-width/2,-h,width,h);g.Restore(saved);
         if(mood==Mood.Sleep)DrawSleepText(g,width,h);
         petTop=bottom-h;
-        if(speechTime>0&&!menu.Visible)DrawSpeech(g,Math.Max(4,bottom-h-72*scale));
+        if(speechTime>0&&!menu.Visible){float anchorHeight=(mood==Mood.Walk||mood==Mood.Turn||mood==Mood.Look||mood==Mood.Sit)?WalkingSpeechHeight()*scale:h;
+            float top=Math.Max(4,Height-10-(float)hopHeight-anchorHeight-72*scale);
+            var speechState=g.Save();g.TranslateTransform((float)(Math.Round(x)-x),(float)(Math.Round(y)-y));
+            DrawSpeech(g,(float)(Math.Round(y+top)-Math.Round(y)));g.Restore(speechState);
+        }
     }}
     void DrawHearts(Graphics g){foreach(var heart in hearts){if(heart.Age<0)continue;double u=heart.Age/heart.Life;
         double travel=(1-Math.Exp(-u*4.5))/(1-Math.Exp(-4.5));double grow=1-Math.Pow(1-u,3);float size=(float)(heart.BaseSize*heart.Scale*(.2+1.2*grow));
@@ -225,6 +229,7 @@ partial class Usagi : Form {
         g.Restore(saved);
     }}
     void Render(){if(IsDisposed)return;if(frameSurface==null)frameSurface=new LayeredSurface();frameSurface.Draw(Handle,new System.Drawing.Point((int)Math.Floor(x),(int)Math.Floor(y)),new Size(Width,Height),DrawIntoFrame);}
+    float WalkingSpeechHeight(){if(walkingSpeechHeight>0)return walkingSpeechHeight;walkingSpeechHeight=Math.Max(sprite.Height*68/headWidths[sprite],poses[0].Height*68/headWidths[poses[0]]);foreach(var frame in walk)walkingSpeechHeight=Math.Max(walkingSpeechHeight,frame.Height*68/headWidths[frame]);return walkingSpeechHeight;}
     void DrawSpeech(Graphics g,float top){var saved=g.Save();g.TranslateTransform(Width/2,top);g.ScaleTransform(scale,scale);float left=-68,width=136,height=43;top=0;using(var path=new GraphicsPath()){
         path.AddBezier(left+19,top,left-2,top-3,left-7,top+20,left+3,top+30);path.AddBezier(left+3,top+30,left+7,top+43,left+35,top+height,left+54,top+height-1);
         path.AddLine(left+54,top+height-1,left+66,top+height+12);path.AddLine(left+66,top+height+12,left+72,top+height-1);

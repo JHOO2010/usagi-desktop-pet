@@ -13,7 +13,7 @@ class Check {
  static void Step(object o,double dt,Point cursor){o.GetType().GetMethod("UpdatePet",flags).Invoke(o,new object[]{dt,cursor});}
  static Bitmap Frame(object o){return (Bitmap)o.GetType().GetMethod("DrawFrame",flags).Invoke(o,null);}
  static void Assert(bool value,string message){if(!value)throw new Exception(message);}
- [STAThread] static void Main(){try{Run();Features();Clones();SocialChecks();WrappingChecks();MischiefChecks();UpdateCheck.Run();StartupChecks();FrameChecks();}catch(Exception error){Console.WriteLine("FAIL: "+error.Message);Environment.Exit(1);}}
+ [STAThread] static void Main(){try{Run();Features();Clones();SocialChecks();WrappingChecks();MischiefChecks();UpdateCheck.Run();StartupChecks();FrameChecks();SpeechStabilityChecks();}catch(Exception error){Console.WriteLine("FAIL: "+error.Message);Environment.Exit(1);}}
  static void Run(){using(var pet=new Usagi()){
    ((PetSound)Get(pet,"sounds")).Enabled=false;
    var area=Screen.PrimaryScreen.WorkingArea;var cursor=new Point(area.Left+10,area.Top+10);Set(pet,"lastCursor",cursor);Set(pet,"x",(double)area.Left+area.Width/2-110);Set(pet,"y",(double)area.Bottom-pet.Height+8);Set(pet,"direction",1);Set(pet,"decisionTime",100.0);
@@ -158,5 +158,13 @@ Step(pet,.45,far);Assert(State(pet)=="Recover","Recovery stage missing");Step(pe
      Call(a,"StartHop");Call(b,"StartHop");double apexA=0,apexB=0;for(int i=0;i<60;i++){Step(a,1.0/60,cursor);apexA=Math.Max(apexA,(double)Get(a,"hopHeight"));}for(int i=0;i<144;i++){Step(b,1.0/144,cursor);apexB=Math.Max(apexB,(double)Get(b,"hopHeight"));}Assert(Math.Abs(apexA-apexB)<2.5,"Refresh rate changed hop motion");
    }Console.WriteLine("PASS: 60-360Hz fractional deadlines, skipped-frame recovery and consistent movement at 60/144Hz; current display "+DisplayRefresh.Read(Screen.PrimaryScreen.DeviceName)+"Hz.");
  }
+
+ static void SpeechStabilityChecks(){using(var pet=new Usagi()){
+   var area=Screen.PrimaryScreen.WorkingArea;Set(pet,"x",area.Left+area.Width/2.0-pet.Width/2);Set(pet,"y",(double)area.Bottom-pet.Height+8);Set(pet,"scale",1f);Mood(pet,"Walk");Set(pet,"moving",true);Set(pet,"speechTime",3.0);Set(pet,"words","야하!");Set(pet,"walkDistance",0.0);
+   float height=(float)pet.GetType().GetMethod("WalkingSpeechHeight",flags).Invoke(pet,null);int limit=(int)Math.Floor(pet.Height-10-height-8);
+   using(var baseline=Frame(pet)){for(int step=1;step<4;step++){Set(pet,"walkDistance",step*7.0);using(var frame=Frame(pet))for(int yy=0;yy<limit;yy++)for(int xx=0;xx<frame.Width;xx++)Assert(frame.GetPixel(xx,yy)==baseline.GetPixel(xx,yy),"Walking pose/bob shook speech bubble");}}
+   double start=(double)Get(pet,"x");Set(pet,"x",start+.125);using(var first=Frame(pet)){Set(pet,"x",start+.375);using(var second=Frame(pet))for(int yy=0;yy<limit;yy++)for(int xx=0;xx<first.Width;xx++)Assert(first.GetPixel(xx,yy)==second.GetPixel(xx,yy),"Subpixel movement shimmered speech text");}
+   Console.WriteLine("PASS: stable speech bubble across four walking poses and pixel-aligned text during subpixel movement.");
+ }}
 
 }
