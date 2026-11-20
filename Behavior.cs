@@ -10,7 +10,7 @@ partial class Usagi {
     double sleepInkPoll;bool lightSleepInk;
     class Track {public double X,Y,Age;public float Scale;public int Side;}
     readonly System.Collections.Generic.List<Track> tracks=new System.Collections.Generic.List<Track>();
-    double trackDistance,tripCooldown=95,strokeTime,strokeCooldown,gazeTilt,wiggleTime,lastWiggle,saveIn=10,foodX;
+    double trackDistance,tripCooldown=18,strokeTime,strokeCooldown,gazeTilt,wiggleTime,lastWiggle,saveIn=10,foodX;
     int wiggleDirection;bool foodActive;string morningSeen="";
     string preferencesPath=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"UsagiPet","settings.txt");
     bool preferencesEnabled=Path.GetFileName(Application.ExecutablePath)=="우사기.exe";
@@ -76,7 +76,7 @@ partial class Usagi {
         if(mood==Mood.Recover){moving=false;if(stateTime>1.35){Change(Mood.Walk);targetSpeed=50;decisionTime=2;}return true;}
         return false;
     }
-    void BeginTrip(){stumbleVelocity=direction*Math.Max(35,Math.Min(115,speed));CancelSocial();speed=0;tripCooldown=90+rng.NextDouble()*100;Change(Mood.Trip);speechTime=0;}
+    void BeginTrip(){stumbleVelocity=direction*Math.Max(35,Math.Min(115,speed));CancelSocial();speed=0;tripCooldown=18+rng.NextDouble()*17;Change(Mood.Trip);speechTime=0;}
     void LeaveTracks(double distance){trackDistance+=distance;if(trackDistance<11*scale)return;trackDistance=0;
         tracks.Add(new Track{X=x+Width/2-direction*12*scale,Y=y+Height-10,Scale=scale,Side=tracks.Count%2});if(tracks.Count>24)tracks.RemoveAt(0);
     }

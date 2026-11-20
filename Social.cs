@@ -65,6 +65,6 @@ partial class Usagi {
         var area=Screen.FromPoint(new System.Drawing.Point((int)x+Width/2,(int)y+Height-15)).WorkingArea;target=Math.Max(area.Left+40*scale,Math.Min(area.Right-40*scale,target));double distance=target-(x+Width/2);
         settling=null;double old=x;if(Math.Abs(distance)<=tolerance){speed=0;moving=false;if(mood!=Mood.Look)Change(Mood.Look);return true;}
         int wanted=distance>0?1:-1;if(direction!=wanted&&speed>4){speed*=Math.Exp(-dt/.1);}else{direction=wanted;double goal=Math.Min(maxSpeed,Math.Abs(distance)*3);speed+=(goal-speed)*(1-Math.Exp(-dt/.2));x+=direction*Math.Min(Math.Abs(distance),speed*dt);}
-        if(mood!=Mood.Walk)Change(Mood.Walk);moving=Math.Abs(x-old)>.01;walkDistance+=Math.Abs(x-old);if(moving)LeaveTracks(Math.Abs(x-old));return false;
+        if(mood!=Mood.Walk)Change(Mood.Walk);moving=Math.Abs(x-old)>.01;walkDistance+=Math.Abs(x-old);if(moving)LeaveTracks(Math.Abs(x-old));if(moving&&speed>48&&tripCooldown<=0)BeginTrip();return false;
     }
 }
