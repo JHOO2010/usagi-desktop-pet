@@ -8,8 +8,8 @@ using System.Windows.Forms;
 class BubbleMenu : ContextMenuStrip {
     static readonly System.Windows.Forms.Layout.LayoutEngine bubbleLayout=new BubbleLayout();
     public override System.Windows.Forms.Layout.LayoutEngine LayoutEngine {get{return bubbleLayout;}}
-    internal int RowTop(ToolStripItem item){int top=40;foreach(ToolStripItem row in Items){if(row is SizeChoiceItem||row is UpdateStatusItem)top+=12;if(row==item)return top;top+=29;}return top;}
-    int MenuHeight {get{int height=62;foreach(ToolStripItem row in Items){height+=29;if(row is SizeChoiceItem||row is UpdateStatusItem)height+=12;}return height;}}
+    internal int RowTop(ToolStripItem item){int top=40;foreach(ToolStripItem row in Items){if(row is SizeChoiceItem||row is UpdateStatusItem||Equals(row.Tag,"settings"))top+=12;if(row==item)return top;top+=29;}return top;}
+    int MenuHeight {get{int height=62;foreach(ToolStripItem row in Items){height+=29;if(row is SizeChoiceItem||row is UpdateStatusItem||Equals(row.Tag,"settings"))height+=12;}return height;}}
     class BubbleLayout : System.Windows.Forms.Layout.LayoutEngine {public override bool Layout(object container,LayoutEventArgs e){var menu=(BubbleMenu)container;foreach(ToolStripItem item in menu.Items){var bounds=new Rectangle(12,menu.RowTop(item),Math.Max(1,menu.Width-24),29);var action=item as BubbleMenuItem;if(action!=null)action.Arrange(bounds);var choice=item as SizeChoiceItem;if(choice!=null)choice.Arrange(bounds);var status=item as UpdateStatusItem;if(status!=null)status.Arrange(bounds);}return false;}}
     public int BodyWidth=244;
     public System.Drawing.Point? PetAnchor; public int TailX=-1;
@@ -32,7 +32,7 @@ class BubbleMenuRenderer : ToolStripProfessionalRenderer {
     public BubbleMenuRenderer(){RoundedEdges=false;}
     protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e){var menu=(BubbleMenu)e.ToolStrip;var g=e.Graphics;g.TextRenderingHint=System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;g.SmoothingMode=SmoothingMode.AntiAlias;using(var path=BubbleMenu.Outline(menu.Width,menu.Height,menu.TailX))using(var brush=new SolidBrush(Cream))g.FillPath(brush,path);
         using(var ink=new SolidBrush(Ink))using(var title=new Font(menu.Font.FontFamily,11.5f))g.DrawString("우사기",title,ink,21,13);
-        using(var line=new Pen(Color.FromArgb(231,220,201),1))foreach(ToolStripItem item in menu.Items)if(item is SizeChoiceItem||item is UpdateStatusItem){int y=menu.RowTop(item)-6;g.DrawLine(line,22,y,menu.Width-22,y);}
+        using(var line=new Pen(Color.FromArgb(231,220,201),1))foreach(ToolStripItem item in menu.Items)if(item is SizeChoiceItem||item is UpdateStatusItem||Equals(item.Tag,"settings")){int y=menu.RowTop(item)-6;g.DrawLine(line,22,y,menu.Width-22,y);}
     }
     protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e){e.Graphics.TextRenderingHint=System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;using(var path=BubbleMenu.Outline(e.ToolStrip.Width,e.ToolStrip.Height,((BubbleMenu)e.ToolStrip).TailX))using(var pen=new Pen(Color.FromArgb(164,135,104),1.4f))e.Graphics.DrawPath(pen,path);}
     protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e){if(!e.Item.Selected)return;e.Graphics.TextRenderingHint=System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;var rect=new Rectangle(2,2,e.Item.Width-4,e.Item.Height-4);using(var path=new GraphicsPath()){int r=10;path.AddArc(rect.Left,rect.Top,r,r,180,90);path.AddArc(rect.Right-r,rect.Top,r,r,270,90);path.AddArc(rect.Right-r,rect.Bottom-r,r,r,0,90);path.AddArc(rect.Left,rect.Bottom-r,r,r,90,90);path.CloseFigure();using(var brush=new SolidBrush(Color.FromArgb(250,235,204)))e.Graphics.FillPath(brush,path);}}
@@ -77,7 +77,7 @@ partial class Usagi : Form {
     readonly string[] softPhrases={"후웅~","야하.","푸루야!","야핫!","…우라."};
     readonly string[] hopPhrases={"우라!","우라아!","야핫!","푸루야!","우라라!"};
     readonly System.Collections.Generic.Queue<string> recent=new System.Collections.Generic.Queue<string>();
-    NotifyIcon tray; Icon trayIcon; ContextMenuStrip menu;ToolStripItem cleanupMenu,monitorMenu,cloneMenuAction;
+    NotifyIcon tray; Icon trayIcon; ContextMenuStrip menu;ToolStripItem cleanupMenu,monitorMenu,cloneMenuAction,soundMenu,settingsMenu;bool settingsReady;
     protected override CreateParams CreateParams {get{var p=base.CreateParams;p.ExStyle|=0x80000|0x80|0x08000000;return p;}}
     [STAThread] static void Main(){Application.EnableVisualStyles();bool acquired;using(var mutex=new System.Threading.Mutex(true,"UsagiDesktopPet.JH",out acquired)){if(acquired)Application.Run(new Usagi());}}
     public Usagi(bool clone=false,Usagi shared=null){
@@ -99,13 +99,14 @@ partial class Usagi : Form {
         }else{sprite=shared.sprite;Array.Copy(shared.walk,walk,4);Array.Copy(shared.leftWalk,leftWalk,4);Array.Copy(shared.poses,poses,4);Array.Copy(shared.held,held,6);Array.Copy(shared.eating,eating,6);Array.Copy(shared.stumble,stumble,6);Array.Copy(shared.leftStumble,leftStumble,6);foreach(var pair in shared.headWidths)headWidths[pair.Key]=pair.Value;}
         patrolScreen=shared==null?Screen.PrimaryScreen:shared.patrolScreen;var area=patrolScreen.WorkingArea;x=area.Right-Width/2-110;y=area.Bottom-Height+8;lastCursor=Cursor.Position;tripCooldown=12+rng.NextDouble()*12;nextSpeechTime=7+rng.NextDouble()*3;LoadPreferences();
         uiFonts.AddFontFile(System.IO.Path.Combine(root,"fonts","NanumSquareRoundR.ttf"));menuFont=new Font(uiFonts.Families[0],10.5f);menu=new BubbleMenu{Font=menuFont};Func<string,ToolStripItem> add=text=>{var item=new BubbleMenuItem(text);menu.Items.Add(item);return item;};var pause=add("잠깐 쉬기");pause.Click+=(s,e)=>{paused=!paused;speed=0;moving=false;pause.Text=paused?"다시 산책하기":"잠깐 쉬기";};
-        add("폴짝!").Click+=(s,e)=>StartHop();add("쓰다듬기 ♥").Click+=(s,e)=>Pet();add("한마디 해줘!").Click+=(s,e)=>Speak();AddRapMenu();add("피자만두 주기").Click+=(s,e)=>OfferFood();(cloneMenuAction=add("우사기 복제하기")).Click+=(s,e)=>DuplicatePets();cleanupMenu=new BubbleMenuItem("우사기 정리");cleanupMenu.Click+=(s,e)=>ClearClones();
+        add("쓰다듬기 ♥").Click+=(s,e)=>Pet();AddRapMenu();add("피자만두 주기").Click+=(s,e)=>OfferFood();(cloneMenuAction=add("우사기 복제하기")).Click+=(s,e)=>DuplicatePets();cleanupMenu=new BubbleMenuItem("우사기 정리");cleanupMenu.Click+=(s,e)=>ClearClones();
         monitorMenu=new BubbleMenuItem("이 화면에서 산책하기");monitorMenu.Click+=(s,e)=>{patrolScreen=Screen.FromPoint(Cursor.Position);var a=patrolScreen.WorkingArea;x=a.Left+a.Width/2-Width/2;y=a.Bottom-Height+8;Wake();SavePreferences();};
         menu.Items.Add(new SizeChoiceItem(()=>scale,v=>{scale=v;SavePreferences();}));
-        var soundMenu=add("효과음: 이어폰에서만");soundMenu.Click+=(s,e)=>{sounds.Enabled=!sounds.Enabled;soundMenu.Text=sounds.Enabled?"효과음: 이어폰에서만":"효과음: 끔";sounds.Tick(1);SavePreferences();};
+        soundMenu=add("효과음: 이어폰에서만");soundMenu.Click+=(s,e)=>{sounds.Enabled=!sounds.Enabled;soundMenu.Text=sounds.Enabled?"효과음: 이어폰에서만":"효과음: 끔";sounds.Tick(1);SavePreferences();};
         AddStartupMenu();AddUpdateMenu();
+        PrepareSettingsMenu();settingsMenu=add("설정…");settingsMenu.Tag="settings";settingsMenu.Click+=(s,e)=>ShowPetSettings();
         add(isClone?"이 우사기 닫기":"모두 종료").Click+=(s,e)=>Close();foreach(ToolStripItem item in menu.Items){item.AutoSize=false;item.Size=new Size(220,33);}
-        menu.Opening+=(s,e)=>{pause.Text=paused?"다시 산책하기":"잠깐 쉬기";RefreshCloneMenu();RefreshMonitorMenu();RefreshStartupMenu();RefreshRapMenu();((BubbleMenu)menu).PetAnchor=new System.Drawing.Point((int)x+Width/2,(int)y+(int)petTop-5);var output=EndpointProbe.Read();soundMenu.Text=!sounds.Enabled?"효과음: 끔":output!=null&&output.Headphones?"효과음: 켜짐 (이어폰)":"효과음: 이어폰 연결 대기";};
+        menu.Opening+=(s,e)=>{pause.Text=paused?"다시 산책하기":"잠깐 쉬기";RefreshCloneMenu();RefreshMonitorMenu();RefreshStartupMenu();RefreshRapMenu();CheckUpdatesFromMenu();((BubbleMenu)menu).PetAnchor=new System.Drawing.Point((int)x+Width/2,(int)y+(int)petTop-5);var output=EndpointProbe.Read();soundMenu.Text=!sounds.Enabled?"효과음: 끔":output!=null&&output.Headphones?"효과음: 켜짐 (이어폰)":"효과음: 이어폰 연결 대기";};
         ContextMenuStrip=menu;
         trayIcon=Icon.ExtractAssociatedIcon(Application.ExecutablePath);
         tray=new NotifyIcon{Icon=trayIcon,Text="우사기 · 1번 폴짝 / 2번 하트 / 3번 하트 폭발",ContextMenuStrip=menu,Visible=!isClone};tray.DoubleClick+=(s,e)=>{patrolScreen=Screen.PrimaryScreen;var a=patrolScreen.WorkingArea;x=a.Right-Width/2-110;y=a.Bottom-Height+8;StartHop();};
@@ -113,7 +114,7 @@ partial class Usagi : Form {
         MouseMove+=(s,e)=>{MovePointer(Cursor.Position);};
         MouseUp+=(s,e)=>{if(e.Button==MouseButtons.Left){EndPointer(frameClock.Elapsed.TotalSeconds,Cursor.Position);Capture=false;}};
         Shown+=(s,e)=>{lastTick=frameClock.Elapsed.TotalSeconds;if(!livePets.Contains(this))livePets.Add(this);if(!isClone){StartDayGreeting(DateTime.Now);StartUpdates();}StartAnimation();};
-        FormClosed+=(s,e)=>{LeaveRap();StopUpdates();LeaveFoodRace();if(!isClone)ClearClones();livePets.Remove(this);SavePreferences();StopAnimation();if(frameSurface!=null)frameSurface.Dispose();sounds.Dispose();tray.Visible=false;tray.Dispose();if(trayIcon!=null)trayIcon.Dispose();menu.Dispose();cleanupMenu.Dispose();monitorMenu.Dispose();if(rapChangeMenu!=null)rapChangeMenu.Dispose();menuFont.Dispose();uiFonts.Dispose();speechFont.Dispose();petFonts.Dispose();if(!isClone){sprite.Dispose();foreach(var b in walk)b.Dispose();foreach(var b in leftWalk)b.Dispose();foreach(var b in poses)b.Dispose();foreach(var b in held)b.Dispose();foreach(var b in eating)b.Dispose();foreach(var b in stumble)b.Dispose();foreach(var b in leftStumble)b.Dispose();}};
+        FormClosed+=(s,e)=>{LeaveRap();StopUpdates();LeaveFoodRace();if(!isClone)ClearClones();livePets.Remove(this);SavePreferences();StopAnimation();if(frameSurface!=null)frameSurface.Dispose();sounds.Dispose();tray.Visible=false;tray.Dispose();if(trayIcon!=null)trayIcon.Dispose();menu.Dispose();if(soundMenu!=null)soundMenu.Dispose();if(startupMenu!=null)startupMenu.Dispose();if(updateMenu!=null)updateMenu.Dispose();cleanupMenu.Dispose();monitorMenu.Dispose();if(rapChangeMenu!=null)rapChangeMenu.Dispose();menuFont.Dispose();uiFonts.Dispose();speechFont.Dispose();petFonts.Dispose();if(!isClone){sprite.Dispose();foreach(var b in walk)b.Dispose();foreach(var b in leftWalk)b.Dispose();foreach(var b in poses)b.Dispose();foreach(var b in held)b.Dispose();foreach(var b in eating)b.Dispose();foreach(var b in stumble)b.Dispose();foreach(var b in leftStumble)b.Dispose();}};
     }
     static void LoadSheet(string path,Bitmap[] target){using(var sheet=new Bitmap(path))for(int i=0;i<target.Length;i++){int l=i*sheet.Width/target.Length,r=(i+1)*sheet.Width/target.Length;using(var cell=sheet.Clone(new Rectangle(l,0,r-l,sheet.Height),PixelFormat.Format32bppArgb))target[i]=Crop(cell);}}
     // Measure the face band, excluding upright/floppy ears and feet. All poses share one head scale.

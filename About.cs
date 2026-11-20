@@ -39,7 +39,7 @@ partial class Usagi {
         AddInfoLink(dialog,"포트폴리오 ↗","https://jhoo-diblisher.pages.dev/",105);
         AddInfoLink(dialog,"GitHub 저장소 ↗","https://github.com/JHOO2010/usagi-desktop-pet",140);
         dialog.Controls.Add(new Label{Text="비공식 팬 프로젝트로 공식 서비스와 관계없습니다.\n캐릭터·이미지·음성·글꼴의 권리는 각 권리자에게 있습니다. 제3자 자료의 사용·재배포에는 각 권리자의 조건이 적용됩니다.\n앱 코드에는 별도 오픈소스 라이선스를 부여하지 않았습니다.\n메뉴 글꼴: 나눔스퀘어라운드 · NAVER · SIL OFL 1.1",Location=new Point(26,185),Size=new Size(338,136)});
-        var close=new Button{Text="닫기",DialogResult=DialogResult.OK,FlatStyle=FlatStyle.Flat,BackColor=Color.FromArgb(255,233,179),Location=new Point(285,318),Size=new Size(78,32)};dialog.Controls.Add(close);dialog.AcceptButton=close;dialog.CancelButton=close;infoOpen=true;try{dialog.ShowDialog(this);}finally{infoOpen=false;}
+        var close=new Button{Text="닫기",DialogResult=DialogResult.OK,FlatStyle=FlatStyle.Flat,BackColor=Color.FromArgb(255,233,179),Location=new Point(285,318),Size=new Size(78,32)};dialog.Controls.Add(close);dialog.AcceptButton=close;dialog.CancelButton=close;bool wasOpen=infoOpen;infoOpen=true;try{dialog.ShowDialog(this);}finally{infoOpen=wasOpen;}
     }}
     static void AddInfoLink(Form dialog,string text,string url,int top){var link=new LinkLabel{Text=text,Location=new Point(26,top),Size=new Size(338,28),LinkColor=Color.FromArgb(133,77,33),ActiveLinkColor=Color.FromArgb(190,110,44)};link.LinkClicked+=(s,e)=>{try{Process.Start(new ProcessStartInfo(url){UseShellExecute=true});}catch(Exception){MessageBox.Show(dialog,"링크를 열지 못했어요.\n"+url,"정보 보기");}};dialog.Controls.Add(link);}
 }
