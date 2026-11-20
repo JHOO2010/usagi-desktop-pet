@@ -61,7 +61,7 @@ partial class Usagi : Form {
     [DllImport("gdi32.dll")] static extern bool DeleteObject(IntPtr obj);
     [DllImport("gdi32.dll")] static extern bool DeleteDC(IntPtr dc);
     [DllImport("user32.dll")] static extern bool UpdateLayeredWindow(IntPtr hwnd,IntPtr dst,ref Point pos,ref NativeSize size,IntPtr src,ref Point zero,int key,ref Blend blend,int flags);
-    readonly Timer timer=new Timer(); readonly Random rng=new Random();
+    readonly Timer timer=new Timer(); readonly Random rng=new Random(Guid.NewGuid().GetHashCode());
     readonly PetSound sounds=new PetSound();
     readonly System.Diagnostics.Stopwatch frameClock=System.Diagnostics.Stopwatch.StartNew();
     readonly System.Drawing.Text.PrivateFontCollection petFonts=new System.Drawing.Text.PrivateFontCollection();
@@ -69,7 +69,7 @@ partial class Usagi : Form {
     Bitmap sprite; readonly Bitmap[] walk=new Bitmap[4],leftWalk=new Bitmap[4],poses=new Bitmap[4];
     readonly System.Collections.Generic.Dictionary<Bitmap,float> headWidths=new System.Collections.Generic.Dictionary<Bitmap,float>();
     Mood mood=Mood.Walk; Mood? settling; bool paused,dragging,pointerDown,moving; int direction=-1,wantedDirection=-1;
-    double pressX,pressY;
+    double pressX,pressY,restDuration=2,stretchDuration=1.05;
     double autoHopIn=5.5,walkSoundIn=2.5,sleepSoundIn;
     System.Drawing.Point lastCursor,dragStart; double x,y,t,lastTick,idleTime,stateTime,decisionTime=2.5;
     double speed,targetSpeed=64,walkDistance,hopHeight,hopVelocity,fallVelocity,landing,heartTime,speechTime=2.8,nextSpeechTime=8.5,curiosityCooldown;
@@ -121,7 +121,7 @@ partial class Usagi : Form {
         var bits=copy.LockBits(rect,ImageLockMode.ReadOnly,PixelFormat.Format32bppArgb);try{var row=new byte[source.Width*4];for(int j=0;j<source.Height;j++){Marshal.Copy(IntPtr.Add(bits.Scan0,j*bits.Stride),row,0,row.Length);for(int i=0;i<source.Width;i++)if(row[i*4+3]>30){l=Math.Min(l,i);r=Math.Max(r,i);top=Math.Min(top,j);b=Math.Max(b,j);}}}finally{copy.UnlockBits(bits);}
         return r<l?new Bitmap(source):copy.Clone(new Rectangle(l,top,r-l+1,b-top+1),PixelFormat.Format32bppArgb);
     }}
-    void Change(Mood next){if(mood==Mood.Sleep&&next!=Mood.Sleep)sounds.StopSleep();mood=next;settling=null;stateTime=0;if(next!=Mood.Walk&&next!=Mood.Hop)moving=false;}
+    void Change(Mood next){if(mood==Mood.Sleep&&next!=Mood.Sleep)sounds.StopSleep();mood=next;settling=null;stateTime=0;if(next==Mood.Sit)restDuration=1.4+rng.NextDouble()*3.1;else if(next==Mood.Look)restDuration=.8+rng.NextDouble()*1.8;if(next==Mood.Stretch)stretchDuration=.85+rng.NextDouble()*.95;if(next!=Mood.Walk&&next!=Mood.Hop)moving=false;}
     void Settle(Mood next){if(speed<1){speed=0;Change(next);}else{settling=next;targetSpeed=0;}}
     void Say(string text){words=text;speechTime=1.5+rng.NextDouble()*1.1;nextSpeechTime=7+rng.NextDouble()*3;recent.Enqueue(text);while(recent.Count>4)recent.Dequeue();}
     string Choose(string[] phrases){var choices=new System.Collections.Generic.List<string>();foreach(var p in phrases)if(!recent.Contains(p))choices.Add(p);if(choices.Count==0)foreach(var p in phrases)if(p!=words)choices.Add(p);return choices[rng.Next(choices.Count)];}
@@ -174,8 +174,8 @@ partial class Usagi : Form {
         if(idleTime>=10&&mood!=Mood.Sleep&&mood!=Mood.Drowsy&&mood!=Mood.Hop){speed=0;Change(Mood.Drowsy);}
         if(mood==Mood.Drowsy&&stateTime>.65){Change(Mood.Sleep);speechTime=0;nextSpeechTime=12+rng.NextDouble()*10;sleepSoundIn=0;}
         if(mood==Mood.Sleep){moving=false;sleepSoundIn-=dt;if(sleepSoundIn<=0){if(!isClone)sounds.PlayAmbient("sleep");sleepSoundIn=9+rng.NextDouble()*8;}return;}
-        if(mood==Mood.Stretch&&stateTime>1.05){targetSpeed=rng.Next(46,90);decisionTime=1+rng.NextDouble()*2;Change(Mood.Walk);}
-        if((mood==Mood.Sit||mood==Mood.Look)&&stateTime>(mood==Mood.Sit?1.5:1.0)){targetSpeed=rng.Next(42,97);decisionTime=1.5+rng.NextDouble()*3;Change(Mood.Walk);}
+        if(mood==Mood.Stretch&&stateTime>stretchDuration){targetSpeed=rng.Next(46,90);decisionTime=1+rng.NextDouble()*2;Change(Mood.Walk);}
+        if((mood==Mood.Sit||mood==Mood.Look)&&stateTime>restDuration){targetSpeed=rng.Next(42,97);decisionTime=1.5+rng.NextDouble()*3;Change(Mood.Walk);}
         if(mood==Mood.Turn){speed*=Math.Exp(-dt/.085);if(stateTime>.24&&speed<1){direction=wantedDirection;Change(Mood.Walk);}}
         if(mood==Mood.Walk&&!settling.HasValue){decisionTime-=dt;if(decisionTime<=0){int action=rng.Next(10);decisionTime=1.8+rng.NextDouble()*3.5;targetSpeed=rng.Next(42,IsNight(DateTime.Now)?75:101);
                 if(action<2){Settle(Mood.Sit);}else if(action==2){Settle(Mood.Look);}else if(action==3){AutonomousHop();}else if(action<7){wantedDirection=-direction;Change(Mood.Turn);}}

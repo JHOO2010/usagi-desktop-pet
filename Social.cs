@@ -14,7 +14,7 @@ partial class Usagi {
         if(wakeDelay>=0){wakeDelay-=dt;if(wakeDelay<=0)Wake();}
     }
     double greetLeft,greetReplyDelay=-1,greetCooldown=3,socialBreak,playLeft,playCooldown=7,followLeft,followCooldown=5,napSeekTime;
-    Usagi napFriend;bool following;
+    Usagi napFriend;bool following,followerWaiting;double followReaction=-1;
     bool SocialBusy {get{return IsDisposed||paused||menu.Visible||pointerDown||dragging||pendingClicks>0||foodActive||scatterActive||mood==Mood.Hop||mood==Mood.Fall||mood==Mood.Eat||mood==Mood.Nuzzle||mood==Mood.Trip||mood==Mood.Recover||mood==Mood.Stretch;}}
     bool SameFloor(Usagi other){return other!=this&&!other.IsDisposed&&Math.Abs((y+Height)-(other.y+other.Height))<8;}
     void CancelSocial(){greetLeft=0;greetReplyDelay=-1;playLeft=0;following=false;followLeft=0;napFriend=null;napSeekTime=0;socialBreak=3;}
@@ -46,12 +46,14 @@ partial class Usagi {
             }
         }}
         if(following){Usagi leader=FindLeader();if(leader==null||followLeft<=0||leader.mood==Mood.Sleep){following=false;followCooldown=6;return false;}
-            followLeft-=dt;double target=FollowPosition(leader);SocialMove(dt,target,Math.Min(104,Math.Abs(leader.speed)+35),5);decisionTime=2;return true;}
-        if(followCooldown<=0){Usagi leader=FindLeader();if(leader!=null&&leader.moving){following=true;followLeft=10+rng.NextDouble()*7;followCooldown=16;return true;}}
+            followLeft-=dt;double target=FollowPosition(leader);
+            if(followerWaiting&&Math.Abs(target-(x+Width/2))>10){if(followReaction<0)followReaction=.15+rng.NextDouble()*.65;followReaction-=dt;if(followReaction>0){moving=false;return true;}followerWaiting=false;}
+            if(SocialMove(dt,target,Math.Min(104,Math.Abs(leader.speed)+35),5)){followerWaiting=true;followReaction=-1;}decisionTime=2;return true;}
+        if(followCooldown<=0){Usagi leader=FindLeader();if(leader!=null&&leader.moving){following=true;followerWaiting=false;followReaction=-1;followLeft=10+rng.NextDouble()*7;followCooldown=16;return true;}}
         return false;
     }
     void BeginGreeting(Usagi peer){
-        greetLeft=peer.greetLeft=1.5;greetCooldown=peer.greetCooldown=16;following=peer.following=false;speed=peer.speed=0;moving=peer.moving=false;
+        greetLeft=1.3+rng.NextDouble()*1.1;peer.greetLeft=1.5+peer.rng.NextDouble()*1.2;greetCooldown=peer.greetCooldown=16;following=peer.following=false;speed=peer.speed=0;moving=peer.moving=false;
         direction=peer.x>x?1:-1;peer.direction=-direction;Change(Mood.Look);peer.Change(Mood.Look);Say("야하!");peer.greetReplyDelay=.28;
     }
     Usagi FindLeader(){Usagi leader=null;foreach(var peer in livePets)if(SameFloor(peer)&&!peer.SocialBusy&&peer.scale>scale+.05f&&(peer.mood==Mood.Walk||peer.mood==Mood.Turn||peer.mood==Mood.Look||peer.mood==Mood.Sit)&&(leader==null||peer.scale>leader.scale))leader=peer;return leader;}

@@ -108,7 +108,7 @@ partial class Usagi {
         double min=area.Left-Width/2+40*scale,max=area.Right-Width/2-40*scale;
         if(x<min||x>max){x=Math.Max(min,Math.Min(max,x));scatterVX=-scatterVX*.65;}
         double floor=area.Bottom-Height+8;
-        if(y>=floor&&scatterVY>0){y=floor;scatterActive=false;scatterVX=scatterVY=0;landing=.26;Change(Mood.Sit);stateTime=.5;decisionTime=.6+rng.NextDouble();}
+        if(y>=floor&&scatterVY>0){y=floor;scatterActive=false;scatterVX=scatterVY=0;landing=.26;Change(Mood.Sit);decisionTime=.6+rng.NextDouble();}
         moving=false;idleTime=0;return true;
     }
     static double BackgroundLuminance(Color color){return (.2126*color.R+.7152*color.G+.0722*color.B)/255;}
