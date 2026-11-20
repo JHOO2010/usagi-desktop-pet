@@ -41,15 +41,10 @@ partial class Usagi {
         File.WriteAllLines(temp,new[]{"scale="+scale.ToString(CultureInfo.InvariantCulture),"sound="+(sounds.Enabled?"on":"off"),"screen="+screen.DeviceName,"position="+ratio.ToString(CultureInfo.InvariantCulture),"morning="+morningSeen});
         if(File.Exists(preferencesPath))File.Replace(temp,preferencesPath,null);else File.Move(temp,preferencesPath);
     }catch(IOException){}catch(UnauthorizedAccessException){}}
-    void OfferFood(){CancelSocial();scatterActive=false;
-        var area=PatrolArea();
-        double center=x+Width/2;int side=center<area.Left+area.Width/2?1:-1;
-        foodX=Math.Max(area.Left+45,Math.Min(area.Right-45,center+side*145*scale));foodActive=true;paused=false;pendingClicks=0;idleTime=0;hopHeight=0;speed=0;
-        Change(Mood.Walk);direction=foodX>center?1:-1;targetSpeed=112;Say("우라!");
-    }
+    void OfferFood(){PlaceSharedFood();}
     void UpdateDetails(double dt,System.Drawing.Point cursor,int mx,int my){
         if(mood==Mood.Sleep){sleepInkPoll-=dt;if(sleepInkPoll<=0){UpdateSleepInk();sleepInkPoll=.6;}}else sleepInkPoll=0;
-        UpdateCloneQueue(dt);
+        UpdateCloneQueue(dt);UpdateMischief(dt);
         saveIn-=dt;if(saveIn<=0){SavePreferences();saveIn=10;}
         tripCooldown-=dt;strokeCooldown=Math.Max(0,strokeCooldown-dt);
         for(int i=tracks.Count-1;i>=0;i--){tracks[i].Age+=dt;if(tracks[i].Age>1.1)tracks.RemoveAt(i);}
@@ -69,14 +64,14 @@ partial class Usagi {
     bool UpdateSpecial(double dt){
         if(UpdateScatter(dt))return true;
         if(foodActive&&mood!=Mood.Eat){idleTime=0;double distance=foodX-(x+Width/2);direction=distance<0?-1:1;targetSpeed=38+74*Math.Min(1,Math.Abs(distance)/(90*scale));decisionTime=100;autoHopIn=100;
-            if(Math.Abs(distance)<19*scale){speed=0;moving=false;Change(Mood.Eat);Say("푸루루루~");}}
-        if(mood==Mood.Eat){idleTime=0;moving=false;speed=0;if(stateTime>=5.3){foodActive=false;EmitHearts(false);Say("야하!");Change(Mood.Look);}return true;}
+            if(Math.Abs(distance)<19*scale&&ClaimFood()){speed=0;moving=false;Change(Mood.Eat);Say("푸루루루~");}}
+        if(mood==Mood.Eat){idleTime=0;moving=false;speed=0;if(stateTime>=5.3){FinishFood();EmitHearts(false);Say("야하!");Change(Mood.Look);}return true;}
         if(mood==Mood.Nuzzle){idleTime=0;moving=false;speed=0;if(stateTime>1.8){Change(Mood.Look);decisionTime=2;}return true;}
         if(mood==Mood.Trip){moving=false;speed=0;MoveStumble(dt);if(stateTime>.72){Change(Mood.Recover);AutoSay("…하아?");}return true;}
         if(mood==Mood.Recover){moving=false;if(stateTime>1.35){Change(Mood.Walk);targetSpeed=50;decisionTime=2;}return true;}
         return false;
     }
-    void BeginTrip(){stumbleVelocity=direction*Math.Max(35,Math.Min(115,speed));CancelSocial();speed=0;tripCooldown=18+rng.NextDouble()*17;Change(Mood.Trip);speechTime=0;}
+    void BeginTrip(){SurpriseNeighbors();stumbleVelocity=direction*Math.Max(35,Math.Min(115,speed));CancelSocial();speed=0;tripCooldown=18+rng.NextDouble()*17;Change(Mood.Trip);speechTime=0;}
     void LeaveTracks(double distance){trackDistance+=distance;if(trackDistance<11*scale)return;trackDistance=0;
         tracks.Add(new Track{X=x+Width/2-direction*12*scale,Y=y+Height-10,Scale=scale,Side=tracks.Count%2});if(tracks.Count>24)tracks.RemoveAt(0);
     }
@@ -90,7 +85,7 @@ partial class Usagi {
     }
     void DrawDetails(Graphics g){
         foreach(var track in tracks){float alpha=(float)(1-track.Age/1.1);using(var ink=new SolidBrush(Color.FromArgb((int)(65*alpha),116,83,57))){float px=(float)(track.X-x),py=(float)(track.Y-y)-track.Side*2*track.Scale;g.FillEllipse(ink,px-3*track.Scale,py-2*track.Scale,6*track.Scale,2.5f*track.Scale);}}
-        if(foodActive&&mood!=Mood.Eat)DrawPizzaBun(g,(float)(foodX-x),Height-17,scale,1);
+        DrawSharedFood(g);
 
     }
     static readonly System.Collections.Generic.List<Usagi> livePets=new System.Collections.Generic.List<Usagi>();

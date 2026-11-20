@@ -13,7 +13,7 @@ class Check {
  static void Step(object o,double dt,Point cursor){o.GetType().GetMethod("UpdatePet",flags).Invoke(o,new object[]{dt,cursor});}
  static Bitmap Frame(object o){return (Bitmap)o.GetType().GetMethod("DrawFrame",flags).Invoke(o,null);}
  static void Assert(bool value,string message){if(!value)throw new Exception(message);}
- [STAThread] static void Main(){try{Run();Features();Clones();SocialChecks();WrappingChecks();}catch(Exception error){Console.WriteLine("FAIL: "+error.Message);Environment.Exit(1);}}
+ [STAThread] static void Main(){try{Run();Features();Clones();SocialChecks();WrappingChecks();MischiefChecks();}catch(Exception error){Console.WriteLine("FAIL: "+error.Message);Environment.Exit(1);}}
  static void Run(){using(var pet=new Usagi()){
    ((PetSound)Get(pet,"sounds")).Enabled=false;
    var area=Screen.PrimaryScreen.WorkingArea;var cursor=new Point(area.Left+10,area.Top+10);Set(pet,"lastCursor",cursor);Set(pet,"x",(double)area.Left+area.Width/2-110);Set(pet,"y",(double)area.Bottom-pet.Height+8);Set(pet,"direction",1);Set(pet,"decisionTime",100.0);
@@ -129,5 +129,18 @@ Step(pet,.45,far);Assert(State(pet)=="Recover","Recovery stage missing");Step(pe
      Set(pet,"x",area.Right-10.0-pet.Width/2);using(var frame=Frame(pet))for(int yy=0;yy<frame.Height;yy++)for(int xx=0;xx<frame.Width;xx++)if((double)Get(pet,"x")+xx>=area.Right+1)Assert(frame.GetPixel(xx,yy).A==0,"Pet leaked beyond assigned monitor");
    }Console.WriteLine("PASS: left/right wrapping, negative monitor origin, continuous stride/speed and monitor clipping.");
  }
+
+ static void MischiefChecks(){using(var root=new Usagi())using(var close=new Usagi(true,root))using(var other=new Usagi(true,root)){
+   var list=(System.Collections.IList)typeof(Usagi).GetField("livePets",BindingFlags.NonPublic|BindingFlags.Static).GetValue(null);var drops=(System.Collections.IList)typeof(Usagi).GetField("foodDrops",BindingFlags.NonPublic|BindingFlags.Static).GetValue(null);var area=Screen.PrimaryScreen.WorkingArea;var cursor=new Point(area.Left,area.Top);foreach(var pet in new[]{root,close,other}){list.Add(pet);((PetSound)Get(pet,"sounds")).Enabled=false;Set(pet,"y",(double)area.Bottom-pet.Height+8);Set(pet,"x",area.Left+area.Width/2.0-pet.Width/2);Set(pet,"lastCursor",cursor);Set(pet,"decisionTime",100.0);Set(pet,"idleTime",0.0);Mood(pet,"Walk");}
+   try{
+     Set(close,"x",(double)Get(root,"x")+70);Set(other,"x",(double)Get(root,"x")+140);Call(root,"BeginTrip");Assert((double)Get(close,"scareDelay")>=0&&(double)Get(other,"scareDelay")>=0,"Neighbors did not notice stumble");foreach(var pet in new[]{close,other})pet.GetType().GetMethod("UpdateMischief",flags).Invoke(pet,new object[]{.4});Assert(State(close)=="Hop"&&State(other)=="Hop","Domino surprise did not hop");Assert((double)Get(close,"scareCooldown")>0,"Domino repeat guard missing");
+     foreach(var pet in new[]{root,close,other}){Mood(pet,"Walk");Set(pet,"scatterActive",false);Set(pet,"pointerDown",false);Set(pet,"dragging",false);Set(pet,"scareDelay",-1.0);Set(pet,"hopHeight",0.0);}
+     Set(root,"x",area.Left+area.Width/2.0-200-root.Width/2);Set(close,"x",area.Left+area.Width/2.0-60-close.Width/2);Set(other,"x",area.Left+area.Width/2.0+200-other.Width/2);Call(root,"OfferFood");Assert(drops.Count==1,"More than one shared bun spawned");Assert((bool)Get(root,"foodActive")&&(bool)Get(close,"foodActive")&&(bool)Get(other,"foodActive"),"Nearby pets did not join bun race");Step(close,.02,cursor);Assert(State(close)=="Eat"&&!(bool)Get(root,"foodActive")&&!(bool)Get(other,"foodActive"),"Bun was not awarded exclusively to first arrival");Call(close,"LeaveFoodRace");Assert(drops.Count==0,"Claimed bun persisted after cancellation");
+     Call(root,"OfferFood");root.GetType().GetMethod("BeginPointer",flags).Invoke(root,new object[]{cursor});Assert(!(bool)Get(root,"foodActive")&&(bool)Get(close,"foodActive"),"Dragging one racer canceled others");foreach(var pet in new[]{root,close,other})Call(pet,"LeaveFoodRace");Assert(drops.Count==0,"Unclaimed bun leaked after all racers left");Set(root,"pointerDown",false);
+     var held=typeof(Usagi).GetMethod("HeldFrame",BindingFlags.Static|BindingFlags.NonPublic);Assert((int)held.Invoke(null,new object[]{.3})!=(int)held.Invoke(null,new object[]{.5}),"Held pose does not wiggle");Assert((int)held.Invoke(null,new object[]{3.2})>=4,"Long hold has no pout pose");
+     Set(root,"scale",1.4f);Set(root,"x",area.Left+area.Width/2.0-root.Width/2);Set(root,"speechTime",0.0);using(var sheet=new Bitmap(1920,360))using(var g=Graphics.FromImage(sheet)){g.Clear(Color.FromArgb(255,248,226));for(int i=0;i<4;i++){Set(root,"foodActive",false);Mood(root,i<2?"Dragged":"Sit");Set(root,"heldTime",i==0?.5:3.6);Set(root,"accessoryKind",i<2?0:i-1);Set(root,"accessoryLeft",20.0);using(var frame=Frame(root))g.DrawImageUnscaled(frame,i*480,0);}sheet.Save("mischief-detail-preview.png");}
+   }finally{foreach(var pet in new[]{root,close,other}){Call(pet,"LeaveFoodRace");list.Remove(pet);}}
+   Console.WriteLine("PASS: domino surprise hops/cooldown, one shared bun and exclusive winner, race cancellation, generated wiggle/pout frames and accessory rendering.");
+ }}
 
 }

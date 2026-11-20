@@ -1,5 +1,5 @@
 ﻿#ifndef AppRelease
-#define AppRelease "1.5.1"
+#define AppRelease "1.6.0"
 #endif
 [Setup]
 AppId={{55757449-1D38-42D2-A5FA-2C4EAE3A3462}
@@ -35,6 +35,7 @@ Source: "..\walk.png"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\poses.png"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\stumble.png"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\eating.png"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\held.png"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\온글잎 꾹지체.ttf"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\sounds\*.wav"; DestDir: "{app}\sounds"; Flags: ignoreversion
 Source: "..\sounds\SOURCES.txt"; DestDir: "{app}\sounds"; Flags: ignoreversion
