@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Text;
 class UpdateCheck {
@@ -7,6 +7,7 @@ class UpdateCheck {
     internal static void Run(){
         string name="UsagiPet-Setup-9.8.7.exe",url="https://github.com/"+PetUpdates.Repo+"/releases/download/v9.8.7/";
         string json="{\"tag_name\":\"v9.8.7\",\"draft\":false,\"prerelease\":false,\"assets\":[{\"name\":\""+name+"\",\"state\":\"uploaded\",\"size\":4096,\"browser_download_url\":\""+url+name+"\"},{\"name\":\""+name+".sha256\",\"state\":\"uploaded\",\"size\":100,\"browser_download_url\":\""+url+name+".sha256\"}]}";
+        int reads=0;var fresh=PetUpdates.FetchLatest(new Version(9,8,6),System.Threading.CancellationToken.None,(source,limit,token)=>{reads++;Assert(source.StartsWith(PetUpdates.ManifestUrl+"?check="),"Latest query did not use fresh manifest URL");return json;});Assert(fresh!=null&&reads==1,"Manifest lookup should not require GitHub API");bool failed=false;try{PetUpdates.FetchLatest(new Version(9,8,6),System.Threading.CancellationToken.None,(source,limit,token)=>{throw new System.Net.WebException("Rate limited");});}catch(System.Net.WebException){failed=true;}Assert(failed,"Lookup failure must not become latest-version success");
         var release=PetUpdates.ParseRelease(json,new Version(9,8,6));Assert(release!=null&&release.Version==new Version(9,8,7),"New update not detected");
         Assert(PetUpdates.ParseRelease(json,new Version(9,8,7))==null&&PetUpdates.ParseRelease(json,new Version(10,0,0))==null,"Equal/older release offered");
         Assert(PetUpdates.ParseRelease(json.Replace("\"prerelease\":false","\"prerelease\":true"),new Version(1,0,0))==null,"Preview release offered");

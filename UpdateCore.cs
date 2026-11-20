@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -14,6 +14,7 @@ class PetRelease {
 }
 static class PetUpdates {
     internal const string Repo="JHOO2010/usagi-desktop-pet";
+    internal const string ManifestUrl="https://github.com/"+Repo+"/releases/latest/download/update.json";
     internal const string LatestUrl="https://api.github.com/repos/"+Repo+"/releases/latest";
     internal static string CacheDirectory {get{return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"UsagiPet","updates");}}
     internal static Version ParseVersion(string text){if(text==null||!Regex.IsMatch(text,@"^v?\d+\.\d+\.\d+$"))return null;Version value;return Version.TryParse(text.TrimStart('v'),out value)?value:null;}
@@ -36,14 +37,15 @@ static class PetUpdates {
     static bool TrustedHost(Uri uri){return uri.Scheme=="https"&&(uri.Host=="api.github.com"||uri.Host=="github.com"||uri.Host=="release-assets.githubusercontent.com"||uri.Host=="objects.githubusercontent.com");}
     static void ReadUrl(string url,Stream target,long limit,CancellationToken token,Action<int> progress){
         var uri=new Uri(url);if(!TrustedHost(uri))throw new InvalidDataException("Unexpected update host.");ServicePointManager.SecurityProtocol|=(SecurityProtocolType)3072;
-        var request=(HttpWebRequest)WebRequest.Create(uri);request.UserAgent="UsagiDesktopPet/"+CurrentVersion.ToString(3);request.Accept="application/vnd.github+json";request.Timeout=20000;request.ReadWriteTimeout=15000;
+        var request=(HttpWebRequest)WebRequest.Create(uri);request.CachePolicy=new System.Net.Cache.RequestCachePolicy(System.Net.Cache.RequestCacheLevel.NoCacheNoStore);request.Headers[HttpRequestHeader.CacheControl]="no-cache, no-store";request.UserAgent="UsagiDesktopPet/"+CurrentVersion.ToString(3);request.Accept="application/vnd.github+json";request.Timeout=20000;request.ReadWriteTimeout=15000;
         using(token.Register(()=>request.Abort()))using(var response=(HttpWebResponse)request.GetResponse()){
             if(!TrustedHost(response.ResponseUri)||response.ContentLength>limit)throw new InvalidDataException("Unexpected download response.");
             using(var input=response.GetResponseStream()){byte[] buffer=new byte[65536];long total=0;int count,last=-1;while((count=input.Read(buffer,0,buffer.Length))>0){token.ThrowIfCancellationRequested();total+=count;if(total>limit)throw new InvalidDataException("Download too large.");target.Write(buffer,0,count);if(progress!=null&&response.ContentLength>0){int value=(int)Math.Min(99,total*100/response.ContentLength);if(value!=last){last=value;progress(value);}}}}
         }
     }
     static string ReadText(string url,int limit,CancellationToken token){using(var stream=new MemoryStream()){ReadUrl(url,stream,limit,token,null);return Encoding.UTF8.GetString(stream.ToArray());}}
-    internal static PetRelease FetchLatest(Version current,CancellationToken token){return ParseRelease(ReadText(LatestUrl,2097152,token),current);}
+    internal static PetRelease FetchLatest(Version current,CancellationToken token){return FetchLatest(current,token,ReadText);}
+    internal static PetRelease FetchLatest(Version current,CancellationToken token,Func<string,int,CancellationToken,string> read){string fresh="?check="+DateTime.UtcNow.Ticks.ToString(CultureInfo.InvariantCulture);string json;try{json=read(ManifestUrl+fresh,2097152,token);}catch(WebException error){var response=error.Response as HttpWebResponse;if(response==null||response.StatusCode!=HttpStatusCode.NotFound)throw;response.Dispose();json=read(LatestUrl+fresh,2097152,token);}return ParseRelease(json,current);}
     internal static string ParseChecksum(string text,string filename){var pieces=text.Trim().Split((char[])null,StringSplitOptions.RemoveEmptyEntries);if(pieces.Length!=2||!Regex.IsMatch(pieces[0],"^[0-9a-fA-F]{64}$")||pieces[1].TrimStart('*')!=filename)throw new InvalidDataException("Invalid installer checksum.");return pieces[0].ToLowerInvariant();}
     internal static string HashFile(string path){using(var sha=SHA256.Create())using(var file=File.OpenRead(path))return BitConverter.ToString(sha.ComputeHash(file)).Replace("-","").ToLowerInvariant();}
     internal static void VerifyInstaller(string path,string expected){if(!Regex.IsMatch(expected??"","^[0-9a-fA-F]{64}$")||!String.Equals(HashFile(path),expected,StringComparison.OrdinalIgnoreCase))throw new InvalidDataException("Installer checksum mismatch.");using(var file=File.OpenRead(path))if(file.ReadByte()!=77||file.ReadByte()!=90)throw new InvalidDataException("Installer format mismatch.");}

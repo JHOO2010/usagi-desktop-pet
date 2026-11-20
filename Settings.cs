@@ -60,11 +60,12 @@ partial class Usagi {
         text(isClone?"시작앱은 원본 우사기에서 설정해요":"Windows에 로그인하면 함께 나와요",56,234,330,smallFont,SettingArt.Muted);
         label("music","랩 음원",263);button("음원 바꾸기…",222,260,170).Click+=(s,e)=>ChooseRapFile(false);
         label("update","업데이트",330);text("v"+PetUpdates.CurrentVersion.ToString(3),56,365,130,smallFont,SettingArt.Muted);
+        var checkedAt=new Label{Location=new Point(192,369),Size=new Size(204,22),Font=smallFont,ForeColor=SettingArt.Muted,UseCompatibleTextRendering=true};form.Controls.Add(checkedAt);
         var update=button("업데이트 확인",192,330,200);update.Enabled=!isClone;if(isClone)update.Text="원본에서 업데이트";update.Click+=(s,e)=>UpdateAction();
         var about=new LinkLabel{Text="정보 보기",LinkColor=Color.Black,ActiveLinkColor=Color.Black,VisitedLinkColor=Color.Black,LinkBehavior=LinkBehavior.AlwaysUnderline,TextAlign=ContentAlignment.MiddleCenter,Location=new Point(160,form.Height-52),Size=new Size(100,24),UseCompatibleTextRendering=true};form.Controls.Add(about);about.LinkClicked+=(s,e)=>ShowSettingsInfo(form);
         if(Screen.AllScreens.Length>1){var monitor=button("이 화면에서 산책",108,400,204);monitor.IconName="monitor";monitor.Click+=(s,e)=>{var a=Screen.FromControl(form).WorkingArea;patrolScreen=Screen.FromControl(form);x=a.Left+a.Width/2-Width/2;y=a.Bottom-Height+8;Wake();SavePreferences();form.DialogResult=DialogResult.OK;form.Close();};}
         var close=button("닫기",360,22,32);close.IconName="close";close.IconOnly=true;close.AccessibleName="설정 닫기";close.DialogResult=DialogResult.Cancel;form.CancelButton=close;
-        var poll=new Timer{Interval=300};Action refresh=()=>{var endpoint=EndpointProbe.Read();sound.SetState(sounds.Enabled);soundHelp.Text=!sounds.Enabled?"지금은 조용히 산책해요":endpoint!=null&&endpoint.Headphones?"연결된 이어폰으로만 들려요":"이어폰을 연결하면 소리가 나요";if(startupMenu!=null){RefreshStartupMenu();startup.SetState(startupMenu.Text.EndsWith("켜짐"));}if(updateMenu!=null){update.Text=updateMenu.Text;update.Enabled=updateMenu.UpdateEnabled;}};
+        var poll=new Timer{Interval=300};Action refresh=()=>{var endpoint=EndpointProbe.Read();sound.SetState(sounds.Enabled);soundHelp.Text=!sounds.Enabled?"지금은 조용히 산책해요":endpoint!=null&&endpoint.Headphones?"연결된 이어폰으로만 들려요":"이어폰을 연결하면 소리가 나요";if(startupMenu!=null){RefreshStartupMenu();startup.SetState(startupMenu.Text.EndsWith("켜짐"));}if(updateMenu!=null){update.Text=updateMenu.Text;update.Enabled=updateMenu.UpdateEnabled;checkedAt.Text=updateCheckStatus;}};
         poll.Tick+=(s,e)=>refresh();form.Shown+=(s,e)=>{refresh();poll.Start();};form.Disposed+=(s,e)=>poll.Dispose();return form;
     }
     void ShowSettingsInfo(Form form){
