@@ -51,17 +51,9 @@ partial class Usagi : Form {
     readonly System.Collections.Generic.List<Heart> hearts=new System.Collections.Generic.List<Heart>();
     int pendingClicks; double clickDeadline,lastClickTime=-10,lastBurstTime=-10; System.Drawing.Point lastClickPoint;
     enum Mood { Walk, Turn, Look, Sit, Drowsy, Sleep, Stretch, Hop, Dragged, Fall, Nuzzle, Eat, Trip, Recover }
-    [StructLayout(LayoutKind.Sequential)] struct Point { public int x,y; public Point(int a,int b){x=a;y=b;} }
-    [StructLayout(LayoutKind.Sequential)] struct NativeSize { public int cx,cy; public NativeSize(int a,int b){cx=a;cy=b;} }
-    [StructLayout(LayoutKind.Sequential, Pack=1)] struct Blend { public byte op,flags,alpha,format; }
     [DllImport("user32.dll")] static extern IntPtr GetDC(IntPtr h);
     [DllImport("user32.dll")] static extern int ReleaseDC(IntPtr h,IntPtr dc);
-    [DllImport("gdi32.dll")] static extern IntPtr CreateCompatibleDC(IntPtr dc);
-    [DllImport("gdi32.dll")] static extern IntPtr SelectObject(IntPtr dc,IntPtr obj);
-    [DllImport("gdi32.dll")] static extern bool DeleteObject(IntPtr obj);
-    [DllImport("gdi32.dll")] static extern bool DeleteDC(IntPtr dc);
-    [DllImport("user32.dll")] static extern bool UpdateLayeredWindow(IntPtr hwnd,IntPtr dst,ref Point pos,ref NativeSize size,IntPtr src,ref Point zero,int key,ref Blend blend,int flags);
-    readonly Timer timer=new Timer(); readonly Random rng=new Random(Guid.NewGuid().GetHashCode());
+    readonly Random rng=new Random(Guid.NewGuid().GetHashCode());
     readonly PetSound sounds=new PetSound();
     readonly System.Diagnostics.Stopwatch frameClock=System.Diagnostics.Stopwatch.StartNew();
     readonly System.Drawing.Text.PrivateFontCollection petFonts=new System.Drawing.Text.PrivateFontCollection();
@@ -112,10 +104,10 @@ partial class Usagi : Form {
         trayIcon=Icon.ExtractAssociatedIcon(Application.ExecutablePath);
         tray=new NotifyIcon{Icon=trayIcon,Text="우사기 · 1번 폴짝 / 2번 하트 / 3번 하트 폭발",ContextMenuStrip=menu,Visible=!isClone};tray.DoubleClick+=(s,e)=>{patrolScreen=Screen.PrimaryScreen;var a=patrolScreen.WorkingArea;x=a.Right-Width/2-110;y=a.Bottom-Height+8;StartHop();};
         MouseDown+=(s,e)=>{if(e.Button==MouseButtons.Right&&(mood==Mood.Sleep||mood==Mood.Drowsy))Wake();if(e.Button==MouseButtons.Left){BeginPointer(Cursor.Position);Capture=true;}};
-        MouseMove+=(s,e)=>{MovePointer(Cursor.Position);if(dragging)Render();};
+        MouseMove+=(s,e)=>{MovePointer(Cursor.Position);};
         MouseUp+=(s,e)=>{if(e.Button==MouseButtons.Left){EndPointer(frameClock.Elapsed.TotalSeconds,Cursor.Position);Capture=false;}};
-        timer.Interval=16;timer.Tick+=(s,e)=>TickPet();Shown+=(s,e)=>{lastTick=frameClock.Elapsed.TotalSeconds;if(!livePets.Contains(this))livePets.Add(this);if(!isClone){StartDayGreeting(DateTime.Now);StartUpdates();}timer.Start();};
-        FormClosed+=(s,e)=>{StopUpdates();LeaveFoodRace();if(!isClone)ClearClones();livePets.Remove(this);SavePreferences();timer.Dispose();sounds.Dispose();tray.Visible=false;tray.Dispose();if(trayIcon!=null)trayIcon.Dispose();menu.Dispose();cleanupMenu.Dispose();monitorMenu.Dispose();speechFont.Dispose();petFonts.Dispose();if(!isClone){sprite.Dispose();foreach(var b in walk)b.Dispose();foreach(var b in leftWalk)b.Dispose();foreach(var b in poses)b.Dispose();foreach(var b in held)b.Dispose();foreach(var b in eating)b.Dispose();foreach(var b in stumble)b.Dispose();foreach(var b in leftStumble)b.Dispose();}};
+        Shown+=(s,e)=>{lastTick=frameClock.Elapsed.TotalSeconds;if(!livePets.Contains(this))livePets.Add(this);if(!isClone){StartDayGreeting(DateTime.Now);StartUpdates();}StartAnimation();};
+        FormClosed+=(s,e)=>{StopUpdates();LeaveFoodRace();if(!isClone)ClearClones();livePets.Remove(this);SavePreferences();StopAnimation();if(frameSurface!=null)frameSurface.Dispose();sounds.Dispose();tray.Visible=false;tray.Dispose();if(trayIcon!=null)trayIcon.Dispose();menu.Dispose();cleanupMenu.Dispose();monitorMenu.Dispose();speechFont.Dispose();petFonts.Dispose();if(!isClone){sprite.Dispose();foreach(var b in walk)b.Dispose();foreach(var b in leftWalk)b.Dispose();foreach(var b in poses)b.Dispose();foreach(var b in held)b.Dispose();foreach(var b in eating)b.Dispose();foreach(var b in stumble)b.Dispose();foreach(var b in leftStumble)b.Dispose();}};
     }
     static void LoadSheet(string path,Bitmap[] target){using(var sheet=new Bitmap(path))for(int i=0;i<target.Length;i++){int l=i*sheet.Width/target.Length,r=(i+1)*sheet.Width/target.Length;using(var cell=sheet.Clone(new Rectangle(l,0,r-l,sheet.Height),PixelFormat.Format32bppArgb))target[i]=Crop(cell);}}
     // Measure the face band, excluding upright/floppy ears and feet. All poses share one head scale.
@@ -160,7 +152,7 @@ partial class Usagi : Form {
     void StartHop(){if(paused)return;LeaveFoodRace();CancelSocial();scatterActive=false;foodActive=false;idleTime=0;speed=0;hopHeight=0;hopVelocity=220;autoHopIn=6+rng.NextDouble()*9;Change(Mood.Hop);sounds.Play("hop");if(autonomousSpeech)AutoSay("우라!");else Say("우라!");}
     void AutonomousHop(){double idle=idleTime;autonomousSpeech=true;try{StartHop();}finally{autonomousSpeech=false;idleTime=idle;}}
     static double Approach(double value,double goal,double delta){return value<goal?Math.Min(goal,value+delta):Math.Max(goal,value-delta);}
-    void TickPet(){double now=frameClock.Elapsed.TotalSeconds,dt=Math.Max(.001,Math.Min(.07,now-lastTick));lastTick=now;if(pendingClicks>0&&now>=clickDeadline&&!pointerDown)ResolveClicks();UpdatePet(dt,Cursor.Position);Render();}
+    void TickPet(){RefreshFrameRate(false);double now=frameClock.Elapsed.TotalSeconds,dt=Math.Max(.001,Math.Min(.07,now-lastTick));lastTick=now;if(pendingClicks>0&&now>=clickDeadline&&!pointerDown)ResolveClicks();UpdatePet(dt,Cursor.Position);Render();}
     void UpdatePet(double dt,System.Drawing.Point cursor){
         t+=dt;speechTime=Math.Max(0,speechTime-dt);nextSpeechTime-=dt;heartTime=Math.Max(0,heartTime-dt);curiosityCooldown-=dt;landing=Math.Max(0,landing-dt);
         sounds.Tick(dt);
@@ -194,7 +186,8 @@ partial class Usagi : Form {
         if(moving&&mood==Mood.Walk&&!settling.HasValue){autoHopIn-=dt;walkSoundIn-=dt;if(autoHopIn<=0){AutonomousHop();}else if(walkSoundIn<=0&&!isClone){bool ura=rng.Next(2)==0;if(sounds.PlayAmbient(ura?"walk_ura":"walk_purya"))AutoSay(ura?"우라!":"푸루야!");walkSoundIn=5+rng.NextDouble()*7;}}
         if(nextSpeechTime<=0&&!dragging&&mood!=Mood.Drowsy)Speak();
     }
-    Bitmap DrawFrame(){var frame=new Bitmap(Width,Height,PixelFormat.Format32bppArgb);using(var g=Graphics.FromImage(frame)){
+    Bitmap DrawFrame(){var frame=new Bitmap(Width,Height,PixelFormat.Format32bppArgb);DrawIntoFrame(frame);return frame;}
+    void DrawIntoFrame(Bitmap frame){using(var g=Graphics.FromImage(frame)){g.Clear(Color.Transparent);
         g.SmoothingMode=SmoothingMode.AntiAlias;g.InterpolationMode=InterpolationMode.HighQualityBicubic;
         var clip=PatrolArea();g.SetClip(new RectangleF((float)(clip.Left-Math.Floor(x)),(float)(clip.Top-Math.Floor(y)),clip.Width,clip.Height+8));
         g.TranslateTransform((float)(x-Math.Floor(x)),(float)(y-Math.Floor(y)));
@@ -222,7 +215,7 @@ partial class Usagi : Form {
         if(mood==Mood.Sleep)DrawSleepText(g,width,h);
         petTop=bottom-h;
         if(speechTime>0&&!menu.Visible)DrawSpeech(g,Math.Max(4,bottom-h-72*scale));
-    }return frame;}
+    }}
     void DrawHearts(Graphics g){foreach(var heart in hearts){if(heart.Age<0)continue;double u=heart.Age/heart.Life;
         double travel=(1-Math.Exp(-u*4.5))/(1-Math.Exp(-4.5));double grow=1-Math.Pow(1-u,3);float size=(float)(heart.BaseSize*heart.Scale*(.2+1.2*grow));
         int alpha=(int)(255*Math.Min(1,u/.07)*Math.Pow(1-u,1.1));if(alpha<=0)continue;
@@ -231,9 +224,7 @@ partial class Usagi : Form {
         using(var path=new GraphicsPath()){path.AddBezier(0,.46f,-.12f,.30f,-.55f,.03f,-.48f,-.23f);path.AddBezier(-.48f,-.23f,-.43f,-.51f,-.10f,-.52f,0,-.28f);path.AddBezier(0,-.28f,.10f,-.52f,.43f,-.51f,.48f,-.23f);path.AddBezier(.48f,-.23f,.55f,.03f,.12f,.30f,0,.46f);path.CloseFigure();using(var fill=new SolidBrush(Color.FromArgb(alpha,heart.Color)))g.FillPath(fill,path);}
         g.Restore(saved);
     }}
-    void Render(){using(var frame=DrawFrame()){var screen=GetDC(IntPtr.Zero);var dc=CreateCompatibleDC(screen);var bitmap=frame.GetHbitmap(Color.FromArgb(0));var old=SelectObject(dc,bitmap);
-        try{var pos=new Point((int)Math.Floor(x),(int)Math.Floor(y));var size=new NativeSize(Width,Height);var zero=new Point(0,0);var blend=new Blend{alpha=255,format=1};UpdateLayeredWindow(Handle,screen,ref pos,ref size,dc,ref zero,0,ref blend,2);}finally{SelectObject(dc,old);DeleteObject(bitmap);DeleteDC(dc);ReleaseDC(IntPtr.Zero,screen);}
-    }}
+    void Render(){if(IsDisposed)return;if(frameSurface==null)frameSurface=new LayeredSurface();frameSurface.Draw(Handle,new System.Drawing.Point((int)Math.Floor(x),(int)Math.Floor(y)),new Size(Width,Height),DrawIntoFrame);}
     void DrawSpeech(Graphics g,float top){var saved=g.Save();g.TranslateTransform(Width/2,top);g.ScaleTransform(scale,scale);float left=-68,width=136,height=43;top=0;using(var path=new GraphicsPath()){
         path.AddBezier(left+19,top,left-2,top-3,left-7,top+20,left+3,top+30);path.AddBezier(left+3,top+30,left+7,top+43,left+35,top+height,left+54,top+height-1);
         path.AddLine(left+54,top+height-1,left+66,top+height+12);path.AddLine(left+66,top+height+12,left+72,top+height-1);

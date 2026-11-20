@@ -13,7 +13,7 @@ class Check {
  static void Step(object o,double dt,Point cursor){o.GetType().GetMethod("UpdatePet",flags).Invoke(o,new object[]{dt,cursor});}
  static Bitmap Frame(object o){return (Bitmap)o.GetType().GetMethod("DrawFrame",flags).Invoke(o,null);}
  static void Assert(bool value,string message){if(!value)throw new Exception(message);}
- [STAThread] static void Main(){try{Run();Features();Clones();SocialChecks();WrappingChecks();MischiefChecks();UpdateCheck.Run();StartupChecks();}catch(Exception error){Console.WriteLine("FAIL: "+error.Message);Environment.Exit(1);}}
+ [STAThread] static void Main(){try{Run();Features();Clones();SocialChecks();WrappingChecks();MischiefChecks();UpdateCheck.Run();StartupChecks();FrameChecks();}catch(Exception error){Console.WriteLine("FAIL: "+error.Message);Environment.Exit(1);}}
  static void Run(){using(var pet=new Usagi()){
    ((PetSound)Get(pet,"sounds")).Enabled=false;
    var area=Screen.PrimaryScreen.WorkingArea;var cursor=new Point(area.Left+10,area.Top+10);Set(pet,"lastCursor",cursor);Set(pet,"x",(double)area.Left+area.Width/2-110);Set(pet,"y",(double)area.Bottom-pet.Height+8);Set(pet,"direction",1);Set(pet,"decisionTime",100.0);
@@ -95,7 +95,7 @@ Step(pet,.45,far);Assert(State(pet)=="Recover","Recovery stage missing");Step(pe
    var list=(System.Collections.IList)typeof(Usagi).GetField("livePets",BindingFlags.NonPublic|BindingFlags.Static).GetValue(null);
    Call(pet,"RefreshCloneMenu");Assert(!((ContextMenuStrip)Get(pet,"menu")).Items.Contains((ToolStripItem)Get(pet,"cleanupMenu")),"Cleanup visible without clones");
    try{Call(pet,"DuplicatePets");for(int i=0;i<4;i++)pet.GetType().GetMethod("UpdateCloneQueue",flags).Invoke(pet,new object[]{.2});Assert(list.Count==4,"Expected four clones");Call(pet,"RefreshCloneMenu");Assert(((ContextMenuStrip)Get(pet,"menu")).Items.Contains((ToolStripItem)Get(pet,"cleanupMenu")),"Cleanup missing with clones");var sizes=new System.Collections.Generic.HashSet<float>();
-     foreach(Usagi copy in list){((Timer)Get(copy,"timer")).Stop();((PetSound)Get(copy,"sounds")).Enabled=false;sizes.Add((float)Get(copy,"scale"));Assert(!(bool)Get(copy,"preferencesEnabled"),"Clone writes root settings");Assert(!((NotifyIcon)Get(copy,"tray")).Visible,"Clone made duplicate tray icon");
+     foreach(Usagi copy in list){Call(copy,"StopAnimation");((PetSound)Get(copy,"sounds")).Enabled=false;sizes.Add((float)Get(copy,"scale"));Assert(!(bool)Get(copy,"preferencesEnabled"),"Clone writes root settings");Assert(!((NotifyIcon)Get(copy,"tray")).Visible,"Clone made duplicate tray icon");
        double launch=(double)Get(copy,"x"),high=(double)Get(copy,"y");for(int j=0;j<65;j++){Step(copy,.02,new Point(area.Left,area.Top));high=Math.Min(high,(double)Get(copy,"y"));}Assert(high<area.Bottom-copy.Height-20,"Scatter did not rise");Assert(Math.Abs((double)Get(copy,"x")-launch)>20,"Scatter did not spread");Assert(!(bool)Get(copy,"scatterActive"),"Clone did not land");Assert(Math.Abs((double)Get(copy,"y")-(area.Bottom-copy.Height+8))<.1,"Clone landed outside taskbar");}
      Assert(sizes.Count==4,"Clone sizes are not varied");
      using(var scene=new Bitmap(960,420))using(var g=Graphics.FromImage(scene)){g.Clear(Color.FromArgb(255,248,226));g.DrawLine(Pens.BurlyWood,0,390,960,390);int n=0;foreach(Usagi copy in list){Set(copy,"x",(double)Get(pet,"x"));Set(copy,"y",(double)Get(pet,"y"));Set(copy,"scatterActive",true);Set(copy,"scatterVX",new[]{-225.0,140.0,-120.0,245.0}[n]);Set(copy,"scatterVY",-235.0-n%2*45);Set(copy,"speechTime",0.0);for(int j=0;j<25;j++)Step(copy,.02,new Point(area.Left,area.Top));using(var frame=Frame(copy))g.DrawImageUnscaled(frame,(int)((double)Get(copy,"x")-(double)Get(pet,"x"))+240,(int)((double)Get(copy,"y")-(double)Get(pet,"y"))+40);n++;}scene.Save("clone-scatter-preview.png");}
@@ -147,6 +147,16 @@ Step(pet,.45,far);Assert(State(pet)=="Recover","Recovery stage missing");Step(pe
    try{Assert(!PetStartup.Enabled(executable,keyPath),"Startup should default off");PetStartup.SetEnabled(true,executable,keyPath);Assert(PetStartup.Enabled(executable,keyPath),"Startup enable failed");using(var key=Microsoft.Win32.Registry.CurrentUser.OpenSubKey(keyPath)){Assert((string)key.GetValue(PetStartup.ValueName)=="\""+executable+"\"","Startup path with spaces is not quoted");}
      PetStartup.SetEnabled(false,other,keyPath);Assert(PetStartup.Enabled(executable,keyPath),"Startup removal affected another install");PetStartup.SetEnabled(false,executable,keyPath);Assert(!PetStartup.Enabled(executable,keyPath),"Startup disable failed");
    }finally{Microsoft.Win32.Registry.CurrentUser.DeleteSubKey(keyPath,false);}Console.WriteLine("PASS: per-user startup toggle, quoted Unicode/space paths and ownership-safe removal in isolated test key.");
+ }
+
+ static void FrameChecks(){
+   foreach(int hz in new[]{60,120,144,165,240,360}){double due=0;for(int i=0;i<hz*10;i++){double now=i/(double)hz+1e-8;due=FramePump.Advance(due,now,hz);Assert(due>now&&due-now<=1.0/hz+1e-7,"Fractional frame deadline drift");}Assert(Math.Abs(due-10)<1e-6,"Ten-second frame cadence drifted");}
+   Assert(DisplayRefresh.Normalize(0)==60&&DisplayRefresh.Normalize(1)==60&&DisplayRefresh.Normalize(144)==144,"Refresh rate fallback failed");double afterStall=FramePump.Advance(0,.25,144);Assert(afterStall>.25&&afterStall<.258,"Dropped frames were not skipped");
+   using(var a=new Usagi())using(var b=new Usagi(true,a)){var area=Screen.PrimaryScreen.WorkingArea;var cursor=new Point(area.Left,area.Top);foreach(var pet in new[]{a,b}){((PetSound)Get(pet,"sounds")).Enabled=false;Set(pet,"x",area.Left+area.Width/2.0-pet.Width/2);Set(pet,"y",(double)area.Bottom-pet.Height+8);Set(pet,"direction",1);Set(pet,"lastCursor",cursor);Set(pet,"decisionTime",1000.0);Set(pet,"autoHopIn",1000.0);Set(pet,"tripCooldown",1000.0);Set(pet,"walkSoundIn",1000.0);Set(pet,"nextSpeechTime",1000.0);Set(pet,"targetSpeed",64.0);}
+     Set(a,"frameDevice","stale-display");Set(a,"refreshRateCheck",1e9);a.GetType().GetMethod("RefreshFrameRate",flags).Invoke(a,new object[]{false});Assert((int)Get(a,"targetFrameRate")==DisplayRefresh.Read(Screen.PrimaryScreen.DeviceName),"Display move did not refresh target rate");
+     for(int i=0;i<120;i++)Step(a,1.0/60,cursor);for(int i=0;i<288;i++)Step(b,1.0/144,cursor);Assert(Math.Abs((double)Get(a,"x")-(double)Get(b,"x"))<2,"Refresh rate changed walking speed");
+     Call(a,"StartHop");Call(b,"StartHop");double apexA=0,apexB=0;for(int i=0;i<60;i++){Step(a,1.0/60,cursor);apexA=Math.Max(apexA,(double)Get(a,"hopHeight"));}for(int i=0;i<144;i++){Step(b,1.0/144,cursor);apexB=Math.Max(apexB,(double)Get(b,"hopHeight"));}Assert(Math.Abs(apexA-apexB)<2.5,"Refresh rate changed hop motion");
+   }Console.WriteLine("PASS: 60-360Hz fractional deadlines, skipped-frame recovery and consistent movement at 60/144Hz; current display "+DisplayRefresh.Read(Screen.PrimaryScreen.DeviceName)+"Hz.");
  }
 
 }

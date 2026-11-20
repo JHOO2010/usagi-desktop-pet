@@ -18,6 +18,7 @@ partial class Usagi {
     }
     void DrawSpriteBlend(Graphics g,Bitmap[] frames,int a,int b,float mix){DrawSpriteLayer(g,frames[mix>=.5f?b:a],1);}
     void DrawSpriteLayer(Graphics g,Bitmap pose,float alpha){if(alpha<=0)return;float factor=68*scale/headWidths[pose],w=pose.Width*factor,h=pose.Height*factor;
+        if(alpha>=.999f){g.DrawImage(pose,-w/2,-h,w,h);return;}
         using(var attr=new ImageAttributes()){var matrix=new ColorMatrix();matrix.Matrix33=alpha;attr.SetColorMatrix(matrix);var points=new[]{new PointF(-w/2,-h),new PointF(w/2,-h),new PointF(-w/2,0)};g.DrawImage(pose,points,new RectangleF(0,0,pose.Width,pose.Height),GraphicsUnit.Pixel,attr);}
     }
     void DrawStumble(Graphics g){int a,b;float mix;StumbleFrames(mood==Mood.Recover,stateTime,out a,out b,out mix);DrawSpriteBlend(g,direction>0?stumble:leftStumble,a,b,mix);}
