@@ -17,21 +17,27 @@ static class SettingArt {
         else {g.DrawEllipse(p,2,2,17,17);g.DrawLine(p,10,9,10,14);g.DrawEllipse(p,9.5f,5,1,1);}
     }g.Restore(state);}
 }
-class SettingButton : Button {
+class SettingButton : Control, IButtonControl {
+    public DialogResult DialogResult {get;set;}
+    public void NotifyDefault(bool value){}
+    public void PerformClick(){if(Enabled)OnClick(EventArgs.Empty);}
+    protected override void OnClick(EventArgs e){base.OnClick(e);if(DialogResult!=DialogResult.None){var form=FindForm();if(form!=null){form.DialogResult=DialogResult;form.Close();}}}
+    protected override void OnKeyDown(KeyEventArgs e){base.OnKeyDown(e);if(e.KeyCode==Keys.Space||e.KeyCode==Keys.Enter){PerformClick();e.Handled=true;}}
+    protected override void OnPaintBackground(PaintEventArgs e){e.Graphics.Clear(Parent==null?SettingArt.Cream:Parent.BackColor);}
     internal bool Chosen,IconOnly;internal string IconName;bool hover;
-    internal SettingButton(){FlatStyle=FlatStyle.Flat;SetStyle(ControlStyles.UserPaint|ControlStyles.OptimizedDoubleBuffer,true);Cursor=Cursors.Hand;}
+    internal SettingButton(){SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.ResizeRedraw|ControlStyles.Selectable,true);TabStop=true;AccessibleRole=AccessibleRole.PushButton;Cursor=Cursors.Hand;}
     protected override void OnMouseEnter(EventArgs e){hover=true;Invalidate();base.OnMouseEnter(e);}
     protected override void OnMouseLeave(EventArgs e){hover=false;Invalidate();base.OnMouseLeave(e);}
-    protected override void OnPaint(PaintEventArgs e){var g=e.Graphics;g.SmoothingMode=SmoothingMode.AntiAlias;g.TextRenderingHint=System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;using(var path=SettingArt.Round(new Rectangle(0,0,Width-1,Height-1),7))using(var fill=new SolidBrush(Chosen?SettingArt.Accent:hover?Color.FromArgb(250,235,204):Color.FromArgb(248,243,232)))g.FillPath(fill,path);
+    protected override void OnPaint(PaintEventArgs e){var g=e.Graphics;g.Clear(Parent==null?SettingArt.Cream:Parent.BackColor);g.SmoothingMode=SmoothingMode.AntiAlias;g.TextRenderingHint=System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;using(var path=SettingArt.Round(new Rectangle(0,0,Width-1,Height-1),7))using(var fill=new SolidBrush(Chosen?SettingArt.Accent:hover?Color.FromArgb(250,235,204):Color.FromArgb(248,243,232)))g.FillPath(fill,path);
         if(IconName!=null)SettingArt.Icon(g,IconName,IconOnly?(Width-21)/2:10,(Height-21)/2);
         if(!IconOnly)using(var brush=new SolidBrush(Enabled?SettingArt.Ink:SettingArt.Muted))using(var format=new StringFormat{Alignment=StringAlignment.Center,LineAlignment=StringAlignment.Center,Trimming=StringTrimming.EllipsisCharacter,FormatFlags=StringFormatFlags.NoWrap})g.DrawString(Text,Font,brush,new RectangleF(IconName==null?3:28,0,Width-(IconName==null?6:32),Height),format);
-        if(Focused)ControlPaint.DrawFocusRectangle(g,new Rectangle(3,3,Width-6,Height-6));
+        if(Focused&&ShowFocusCues)ControlPaint.DrawFocusRectangle(g,new Rectangle(3,3,Width-6,Height-6));
     }
 }
-class SettingToggle : Button {
-    bool state;internal SettingToggle(){Cursor=Cursors.Hand;SetStyle(ControlStyles.UserPaint|ControlStyles.OptimizedDoubleBuffer,true);}
+class SettingToggle : SettingButton {
+    bool state;internal SettingToggle(){AccessibleRole=AccessibleRole.CheckButton;}
     internal void SetState(bool on){if(state==on&&Text.Length>0)return;state=on;Text=on?"켜짐":"끔";AccessibleDescription=Text;Invalidate();}
-    protected override void OnPaint(PaintEventArgs e){var g=e.Graphics;g.SmoothingMode=SmoothingMode.AntiAlias;g.TextRenderingHint=System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;using(var b=new SolidBrush(Enabled?SettingArt.Ink:SettingArt.Muted))g.DrawString(state?"켬":"끔",Font,b,0,8);using(var path=SettingArt.Round(new Rectangle(29,5,42,22),11))using(var fill=new SolidBrush(state?SettingArt.Accent:SettingArt.Line))g.FillPath(fill,path);using(var fill=new SolidBrush(SettingArt.Cream))g.FillEllipse(fill,state?51:32,8,16,16);if(Focused)ControlPaint.DrawFocusRectangle(g,new Rectangle(1,1,Width-2,Height-2));}
+    protected override void OnPaint(PaintEventArgs e){var g=e.Graphics;g.Clear(Parent==null?SettingArt.Cream:Parent.BackColor);g.SmoothingMode=SmoothingMode.AntiAlias;g.TextRenderingHint=System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;using(var b=new SolidBrush(Enabled?SettingArt.Ink:SettingArt.Muted))using(var format=new StringFormat{Alignment=StringAlignment.Center,LineAlignment=StringAlignment.Center,FormatFlags=StringFormatFlags.NoWrap})g.DrawString(state?"켬":"끔",Font,b,new RectangleF(0,0,27,Height),format);using(var path=SettingArt.Round(new Rectangle(29,5,42,22),11))using(var fill=new SolidBrush(state?SettingArt.Accent:SettingArt.Line))g.FillPath(fill,path);using(var fill=new SolidBrush(SettingArt.Cream))g.FillEllipse(fill,state?51:32,8,16,16);if(Focused&&ShowFocusCues)ControlPaint.DrawFocusRectangle(g,new Rectangle(1,1,Width-2,Height-2));}
 }
 partial class Usagi {
     void PrepareSettingsMenu(){foreach(ToolStripItem item in new System.Collections.Generic.List<ToolStripItem>(MenuItems()))if(item is SizeChoiceItem||item==soundMenu||item==startupMenu||item==updateMenu||item==rapChangeMenu){menu.Items.Remove(item);if(item is SizeChoiceItem)item.Dispose();}settingsReady=true;}
