@@ -42,11 +42,11 @@ class SettingToggle : SettingButton {
 partial class Usagi {
     void PrepareSettingsMenu(){foreach(ToolStripItem item in new System.Collections.Generic.List<ToolStripItem>(MenuItems()))if(item is SizeChoiceItem||item==soundMenu||item==startupMenu||item==updateMenu||item==rapChangeMenu){menu.Items.Remove(item);if(item is SizeChoiceItem)item.Dispose();}settingsReady=true;}
     System.Collections.Generic.IEnumerable<ToolStripItem> MenuItems(){foreach(ToolStripItem item in menu.Items)yield return item;}
-    Form CreateSettingsForm(){var form=new Form{Text="우사기 설정",Font=menuFont,FormBorderStyle=FormBorderStyle.None,ShowInTaskbar=false,TopMost=true,StartPosition=FormStartPosition.Manual,ClientSize=new Size(420,438),BackColor=SettingArt.Cream,ForeColor=SettingArt.Ink};
+    Form CreateSettingsForm(){var form=new Form{Text="우사기 설정",Font=menuFont,FormBorderStyle=FormBorderStyle.None,ShowInTaskbar=false,TopMost=true,StartPosition=FormStartPosition.Manual,ClientSize=new Size(420,Screen.AllScreens.Length>1?510:462),BackColor=SettingArt.Cream,ForeColor=SettingArt.Ink};
         var anchor=new Point((int)Math.Round(x)+Width/2,(int)Math.Round(y+petTop)-5);var area=Screen.FromPoint(anchor).WorkingArea;
         form.Location=new Point(Math.Max(area.Left+4,Math.Min(area.Right-form.Width-4,anchor.X-form.Width/2)),Math.Max(area.Top+4,Math.Min(area.Bottom-form.Height-4,anchor.Y-form.Height)));
         int tail=Math.Max(24,Math.Min(form.Width-24,anchor.X-form.Left));using(var path=BubbleMenu.Outline(form.Width,form.Height,tail))form.Region=new Region(path);
-        form.Paint+=(s,e)=>{var g=e.Graphics;g.SmoothingMode=System.Drawing.Drawing2D.SmoothingMode.AntiAlias;using(var path=BubbleMenu.Outline(form.Width,form.Height,tail))using(var pen=new Pen(Color.FromArgb(164,135,104),1.4f))g.DrawPath(pen,path);SettingArt.Icon(g,"settings",27,26);using(var line=new Pen(SettingArt.Line))g.DrawLine(line,26,294,394,294);};
+        form.Paint+=(s,e)=>{var g=e.Graphics;g.SmoothingMode=System.Drawing.Drawing2D.SmoothingMode.AntiAlias;using(var path=BubbleMenu.Outline(form.Width,form.Height,tail))using(var pen=new Pen(Color.FromArgb(164,135,104),1.4f))g.DrawPath(pen,path);SettingArt.Icon(g,"settings",27,26);using(var line=new Pen(SettingArt.Line))g.DrawLine(line,26,310,394,310);};
         var titleFont=new Font(menuFont.FontFamily,15);var smallFont=new Font(menuFont.FontFamily,9);form.Disposed+=(s,e)=>{titleFont.Dispose();smallFont.Dispose();};
         Action<string,int,int,int,Font,Color> text=(value,left,top,width,font,color)=>form.Controls.Add(new Label{Text=value,Location=new Point(left,top),Size=new Size(width,24),Font=font,ForeColor=color,UseCompatibleTextRendering=true});
         text("우사기 설정",56,23,280,titleFont,SettingArt.Ink);text("바꾸면 바로 적용돼요",27,56,300,smallFont,SettingArt.Muted);
@@ -59,13 +59,27 @@ partial class Usagi {
         label("startup","시작 시 실행",204);var startup=new SettingToggle{Location=new Point(320,202),Size=new Size(72,32),Enabled=!isClone,AccessibleName="Windows 시작 시 실행"};form.Controls.Add(startup);startup.Click+=(s,e)=>startupMenu.PerformClick();
         text(isClone?"시작앱은 원본 우사기에서 설정해요":"Windows에 로그인하면 함께 나와요",56,234,330,smallFont,SettingArt.Muted);
         label("music","랩 음원",263);button("음원 바꾸기…",222,260,170).Click+=(s,e)=>ChooseRapFile(false);
-        label("update","업데이트",310);text("v"+PetUpdates.CurrentVersion.ToString(3),56,340,130,smallFont,SettingArt.Muted);
-        var update=button("업데이트 확인",192,310,200);update.Enabled=!isClone;if(isClone)update.Text="원본에서 업데이트";update.Click+=(s,e)=>UpdateAction();
-        var about=button("정보 보기",26,382,122);about.IconName="info";about.Click+=(s,e)=>ShowPetInfo();
-        if(Screen.AllScreens.Length>1){var monitor=button("이 화면에서 산책",178,382,214);monitor.IconName="monitor";monitor.Click+=(s,e)=>{var a=Screen.FromControl(form).WorkingArea;patrolScreen=Screen.FromControl(form);x=a.Left+a.Width/2-Width/2;y=a.Bottom-Height+8;Wake();SavePreferences();form.DialogResult=DialogResult.OK;form.Close();};}
+        label("update","업데이트",330);text("v"+PetUpdates.CurrentVersion.ToString(3),56,365,130,smallFont,SettingArt.Muted);
+        var update=button("업데이트 확인",192,330,200);update.Enabled=!isClone;if(isClone)update.Text="원본에서 업데이트";update.Click+=(s,e)=>UpdateAction();
+        var about=new LinkLabel{Text="정보 보기",LinkColor=Color.Black,ActiveLinkColor=Color.Black,VisitedLinkColor=Color.Black,LinkBehavior=LinkBehavior.AlwaysUnderline,TextAlign=ContentAlignment.MiddleCenter,Location=new Point(160,form.Height-52),Size=new Size(100,24),UseCompatibleTextRendering=true};form.Controls.Add(about);about.LinkClicked+=(s,e)=>ShowSettingsInfo(form);
+        if(Screen.AllScreens.Length>1){var monitor=button("이 화면에서 산책",108,400,204);monitor.IconName="monitor";monitor.Click+=(s,e)=>{var a=Screen.FromControl(form).WorkingArea;patrolScreen=Screen.FromControl(form);x=a.Left+a.Width/2-Width/2;y=a.Bottom-Height+8;Wake();SavePreferences();form.DialogResult=DialogResult.OK;form.Close();};}
         var close=button("닫기",360,22,32);close.IconName="close";close.IconOnly=true;close.AccessibleName="설정 닫기";close.DialogResult=DialogResult.Cancel;form.CancelButton=close;
         var poll=new Timer{Interval=300};Action refresh=()=>{var endpoint=EndpointProbe.Read();sound.SetState(sounds.Enabled);soundHelp.Text=!sounds.Enabled?"지금은 조용히 산책해요":endpoint!=null&&endpoint.Headphones?"연결된 이어폰으로만 들려요":"이어폰을 연결하면 소리가 나요";if(startupMenu!=null){RefreshStartupMenu();startup.SetState(startupMenu.Text.EndsWith("켜짐"));}if(updateMenu!=null){update.Text=updateMenu.Text;update.Enabled=updateMenu.UpdateEnabled;}};
         poll.Tick+=(s,e)=>refresh();form.Shown+=(s,e)=>{refresh();poll.Start();};form.Disposed+=(s,e)=>poll.Dispose();return form;
     }
+    void ShowSettingsInfo(Form form){
+        if(form.Controls.ContainsKey("InfoPage"))return;
+        var hidden=new System.Collections.Generic.List<Control>();
+        foreach(Control control in form.Controls)if(control.Top>=78&&control.Visible){hidden.Add(control);control.Visible=false;}
+        var page=new Panel{Name="InfoPage",Location=new Point(26,80),Size=new Size(368,form.Height-112),BackColor=SettingArt.Cream,AutoScroll=true};form.Controls.Add(page);page.BringToFront();
+        var back=new SettingButton{Text="설정으로 돌아가기",Location=new Point(0,0),Size=new Size(158,30)};page.Controls.Add(back);
+        back.Click+=(s,e)=>{form.Controls.Remove(page);page.Dispose();foreach(var control in hidden)control.Visible=true;foreach(var control in hidden)if(control is LinkLabel){control.Focus();break;}};
+        page.Controls.Add(new Label{Text="우사기 산책 펫",Location=new Point(0,46),Size=new Size(360,26),UseCompatibleTextRendering=true});
+        page.Controls.Add(new Label{Text="v"+PetUpdates.CurrentVersion.ToString(3)+" · 만든 사람 JHOO",Location=new Point(0,74),Size=new Size(360,24),ForeColor=SettingArt.Muted,UseCompatibleTextRendering=true});
+        AddSettingsInfoLink(page,"포트폴리오","https://jhoo-diblisher.pages.dev/",108);
+        AddSettingsInfoLink(page,"GitHub 저장소","https://github.com/JHOO2010/usagi-desktop-pet",142);
+        page.Controls.Add(new Label{Text="비공식 팬 프로젝트로 공식 서비스와 관계없습니다.\n캐릭터·이미지·음성·글꼴의 권리는 각 권리자에게 있습니다. 제3자 자료의 사용·재배포에는 각 권리자의 조건이 적용됩니다.\n\n앱 코드에는 별도 오픈소스 라이선스를 부여하지 않았습니다.\n메뉴 글꼴: 나눔스퀘어라운드 · NAVER · SIL OFL 1.1",Location=new Point(0,180),Size=new Size(360,166),UseCompatibleTextRendering=true});back.Focus();
+    }
+    static void AddSettingsInfoLink(Control page,string text,string url,int top){var link=new LinkLabel{Text=text,Location=new Point(0,top),Size=new Size(360,26),LinkColor=Color.Black,ActiveLinkColor=Color.Black,UseCompatibleTextRendering=true};link.LinkClicked+=(s,e)=>{try{System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url){UseShellExecute=true});}catch(Exception){MessageBox.Show(page,"링크를 열지 못했어요.\n"+url,"정보");}};page.Controls.Add(link);}
     void ShowPetSettings(){using(var form=CreateSettingsForm()){bool previous=infoOpen;infoOpen=true;try{form.ShowDialog(this);}finally{infoOpen=previous;}}}
 }
