@@ -32,17 +32,17 @@ partial class Usagi {
             if(key=="morning")morningSeen=value;
         }
         Screen selected=Screen.PrimaryScreen;foreach(var candidate in Screen.AllScreens)if(candidate.DeviceName==screen)selected=candidate;
-        var area=selected.WorkingArea;x=area.Left+area.Width*ratio-Width/2;y=area.Bottom-Height+8;
+        patrolScreen=selected;var area=selected.WorkingArea;x=area.Left+area.Width*ratio-Width/2;y=area.Bottom-Height+8;
     }catch(IOException){}catch(UnauthorizedAccessException){}}
     void SavePreferences(){if(!SaveEnabled)return;try{
-        var screen=Screen.FromPoint(new System.Drawing.Point((int)x+Width/2,(int)y+Height-15));var area=screen.WorkingArea;
+        var area=PatrolArea();var screen=patrolScreen;
         double ratio=Math.Max(.05,Math.Min(.95,(x+Width/2-area.Left)/area.Width));
         Directory.CreateDirectory(Path.GetDirectoryName(preferencesPath));string temp=preferencesPath+".tmp";
         File.WriteAllLines(temp,new[]{"scale="+scale.ToString(CultureInfo.InvariantCulture),"sound="+(sounds.Enabled?"on":"off"),"screen="+screen.DeviceName,"position="+ratio.ToString(CultureInfo.InvariantCulture),"morning="+morningSeen});
         if(File.Exists(preferencesPath))File.Replace(temp,preferencesPath,null);else File.Move(temp,preferencesPath);
     }catch(IOException){}catch(UnauthorizedAccessException){}}
     void OfferFood(){CancelSocial();scatterActive=false;
-        var area=Screen.FromPoint(new System.Drawing.Point((int)x+Width/2,(int)y+Height-15)).WorkingArea;
+        var area=PatrolArea();
         double center=x+Width/2;int side=center<area.Left+area.Width/2?1:-1;
         foodX=Math.Max(area.Left+45,Math.Min(area.Right-45,center+side*145*scale));foodActive=true;paused=false;pendingClicks=0;idleTime=0;hopHeight=0;speed=0;
         Change(Mood.Walk);direction=foodX>center?1:-1;targetSpeed=112;Say("우라!");
@@ -105,7 +105,7 @@ partial class Usagi {
     }
     bool UpdateScatter(double dt){if(!scatterActive)return false;
         scatterTime+=dt;scatterVY+=640*dt;x+=scatterVX*dt;y+=scatterVY*dt;scatterVX*=Math.Exp(-dt*.6);
-        var area=Screen.FromPoint(new System.Drawing.Point((int)x+Width/2,(int)y+Height-15)).WorkingArea;
+        var area=PatrolArea();
         double min=area.Left-Width/2+40*scale,max=area.Right-Width/2-40*scale;
         if(x<min||x>max){x=Math.Max(min,Math.Min(max,x));scatterVX=-scatterVX*.65;}
         double floor=area.Bottom-Height+8;

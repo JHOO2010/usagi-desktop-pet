@@ -13,7 +13,7 @@ class Check {
  static void Step(object o,double dt,Point cursor){o.GetType().GetMethod("UpdatePet",flags).Invoke(o,new object[]{dt,cursor});}
  static Bitmap Frame(object o){return (Bitmap)o.GetType().GetMethod("DrawFrame",flags).Invoke(o,null);}
  static void Assert(bool value,string message){if(!value)throw new Exception(message);}
- [STAThread] static void Main(){try{Run();Features();Clones();SocialChecks();}catch(Exception error){Console.WriteLine("FAIL: "+error.Message);Environment.Exit(1);}}
+ [STAThread] static void Main(){try{Run();Features();Clones();SocialChecks();WrappingChecks();}catch(Exception error){Console.WriteLine("FAIL: "+error.Message);Environment.Exit(1);}}
  static void Run(){using(var pet=new Usagi()){
    ((PetSound)Get(pet,"sounds")).Enabled=false;
    var area=Screen.PrimaryScreen.WorkingArea;var cursor=new Point(area.Left+10,area.Top+10);Set(pet,"lastCursor",cursor);Set(pet,"x",(double)area.Left+area.Width/2-110);Set(pet,"y",(double)area.Bottom-pet.Height+8);Set(pet,"direction",1);Set(pet,"decisionTime",100.0);
@@ -119,5 +119,15 @@ Step(pet,.45,far);Assert(State(pet)=="Recover","Recovery stage missing");Step(pe
    }finally{list.Remove(small);list.Remove(big);}
    Console.WriteLine("PASS: mutual greeting/reply, size-ordered following, cursor approach/escape, shared nap gathering and feeding priority.");
  }}
+
+ static void WrappingChecks(){
+   var wrap=typeof(Usagi).GetMethod("WrapCenter",BindingFlags.NonPublic|BindingFlags.Static);
+   Assert(Math.Abs((double)wrap.Invoke(null,new object[]{2025.0,0.0,1920.0,90.0})-(-75))<.001,"Right wrap lost overshoot");
+   Assert(Math.Abs((double)wrap.Invoke(null,new object[]{-104.0,0.0,1920.0,90.0})-1996)<.001,"Left wrap lost overshoot");
+   Assert(Math.Abs((double)wrap.Invoke(null,new object[]{105.0,-1920.0,0.0,90.0})-(-1995))<.001,"Negative monitor origin wrap failed");
+   using(var pet=new Usagi()){((PetSound)Get(pet,"sounds")).Enabled=false;var area=Screen.PrimaryScreen.WorkingArea;var far=new Point(area.Left,area.Top);Set(pet,"lastCursor",far);Set(pet,"scale",1f);Set(pet,"idleTime",0.0);Set(pet,"x",area.Right+91.0-pet.Width/2);Set(pet,"y",(double)area.Bottom-pet.Height+8);Set(pet,"direction",1);Set(pet,"speed",64.0);Set(pet,"targetSpeed",64.0);Set(pet,"decisionTime",100.0);Set(pet,"autoHopIn",100.0);Set(pet,"tripCooldown",100.0);double stride=(double)Get(pet,"walkDistance");Step(pet,.02,far);Assert((double)Get(pet,"x")+pet.Width/2<area.Left,"Did not enter from opposite edge");Assert((int)Get(pet,"direction")==1&&(double)Get(pet,"speed")>60,"Wrap changed speed or direction");Assert((double)Get(pet,"walkDistance")-stride<3,"Teleport counted as a walking stride");
+     Set(pet,"x",area.Right-10.0-pet.Width/2);using(var frame=Frame(pet))for(int yy=0;yy<frame.Height;yy++)for(int xx=0;xx<frame.Width;xx++)if((double)Get(pet,"x")+xx>=area.Right+1)Assert(frame.GetPixel(xx,yy).A==0,"Pet leaked beyond assigned monitor");
+   }Console.WriteLine("PASS: left/right wrapping, negative monitor origin, continuous stride/speed and monitor clipping.");
+ }
 
 }
