@@ -99,7 +99,7 @@ partial class Usagi : Form {
         for(int i=0;i<4;i++){leftWalk[i]=new Bitmap(walk[i]);leftWalk[i].RotateFlip(RotateFlipType.RotateNoneFlipX);}
         headWidths[sprite]=MeasureHeadWidth(sprite);foreach(var b in walk)headWidths[b]=MeasureHeadWidth(b);foreach(var b in leftWalk)headWidths[b]=MeasureHeadWidth(b);foreach(var b in poses)headWidths[b]=MeasureHeadWidth(b);
         }else{sprite=shared.sprite;Array.Copy(shared.walk,walk,4);Array.Copy(shared.leftWalk,leftWalk,4);Array.Copy(shared.poses,poses,4);Array.Copy(shared.held,held,6);Array.Copy(shared.eating,eating,6);Array.Copy(shared.stumble,stumble,6);Array.Copy(shared.leftStumble,leftStumble,6);foreach(var pair in shared.headWidths)headWidths[pair.Key]=pair.Value;}
-        patrolScreen=shared==null?Screen.PrimaryScreen:shared.patrolScreen;var area=patrolScreen.WorkingArea;x=area.Right-Width/2-110;y=area.Bottom-Height+8;lastCursor=Cursor.Position;accessoryIn=8+rng.NextDouble()*16;tripCooldown=12+rng.NextDouble()*12;nextSpeechTime=7+rng.NextDouble()*3;LoadPreferences();
+        patrolScreen=shared==null?Screen.PrimaryScreen:shared.patrolScreen;var area=patrolScreen.WorkingArea;x=area.Right-Width/2-110;y=area.Bottom-Height+8;lastCursor=Cursor.Position;tripCooldown=12+rng.NextDouble()*12;nextSpeechTime=7+rng.NextDouble()*3;LoadPreferences();
         menu=new BubbleMenu{Font=speechFont};Func<string,ToolStripItem> add=text=>{var item=new BubbleMenuItem(text);menu.Items.Add(item);return item;};var pause=add("잠깐 쉬기");pause.Click+=(s,e)=>{paused=!paused;speed=0;moving=false;pause.Text=paused?"다시 산책하기":"잠깐 쉬기";};
         add("폴짝!").Click+=(s,e)=>StartHop();add("쓰다듬기 ♥").Click+=(s,e)=>Pet();add("한마디 해줘!").Click+=(s,e)=>Speak();add("피자만두 주기").Click+=(s,e)=>OfferFood();add("우사기 복제하기").Click+=(s,e)=>DuplicatePets();cleanupMenu=new BubbleMenuItem("우사기 정리");cleanupMenu.Click+=(s,e)=>ClearClones();
         monitorMenu=new BubbleMenuItem("이 화면에서 산책하기");monitorMenu.Click+=(s,e)=>{patrolScreen=Screen.FromPoint(Cursor.Position);var a=patrolScreen.WorkingArea;x=a.Left+a.Width/2-Width/2;y=a.Bottom-Height+8;Wake();SavePreferences();};
@@ -217,7 +217,7 @@ partial class Usagi : Form {
         if(mood==Mood.Trip||mood==Mood.Recover){int a,b;float mix;StumbleFrames(mood==Mood.Recover,stateTime,out a,out b,out mix);pose=(direction>0?stumble:leftStumble)[a];factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;angle=0;squash=0;}
         if(mood==Mood.Look)angle+=(float)gazeTilt;
         DrawDetails(g);DrawHearts(g);DrawHopWind(g,bottom);
-        var saved=g.Save();g.TranslateTransform(Width/2,bottom);g.RotateTransform(angle);g.ScaleTransform(1+squash,1-squash);if(mood==Mood.Trip||mood==Mood.Recover)DrawStumble(g);else if(mood==Mood.Eat)DrawEatingSprites(g);else g.DrawImage(pose,-width/2,-h,width,h);DrawAccessory(g,h);g.Restore(saved);
+        var saved=g.Save();g.TranslateTransform(Width/2,bottom);g.RotateTransform(angle);g.ScaleTransform(1+squash,1-squash);if(mood==Mood.Trip||mood==Mood.Recover)DrawStumble(g);else if(mood==Mood.Eat)DrawEatingSprites(g);else g.DrawImage(pose,-width/2,-h,width,h);g.Restore(saved);
         if(mood==Mood.Sleep)DrawSleepText(g,width,h);
         petTop=bottom-h;
         if(speechTime>0&&!menu.Visible)DrawSpeech(g,Math.Max(4,bottom-h-72*scale));
