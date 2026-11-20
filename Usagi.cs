@@ -8,7 +8,7 @@ using System.Windows.Forms;
 class BubbleMenu : ContextMenuStrip {
     static readonly System.Windows.Forms.Layout.LayoutEngine bubbleLayout=new BubbleLayout();
     public override System.Windows.Forms.Layout.LayoutEngine LayoutEngine {get{return bubbleLayout;}}
-    class BubbleLayout : System.Windows.Forms.Layout.LayoutEngine {public override bool Layout(object container,LayoutEventArgs e){var menu=(BubbleMenu)container;for(int i=0;i<menu.Items.Count;i++){var bounds=new Rectangle(10,9+i*33,Math.Max(1,menu.Width-20),33);var action=menu.Items[i] as BubbleMenuItem;if(action!=null)action.Arrange(bounds);var choice=menu.Items[i] as SizeChoiceItem;if(choice!=null)choice.Arrange(bounds);}return false;}}
+    class BubbleLayout : System.Windows.Forms.Layout.LayoutEngine {public override bool Layout(object container,LayoutEventArgs e){var menu=(BubbleMenu)container;for(int i=0;i<menu.Items.Count;i++){var bounds=new Rectangle(10,9+i*33,Math.Max(1,menu.Width-20),33);var action=menu.Items[i] as BubbleMenuItem;if(action!=null)action.Arrange(bounds);var choice=menu.Items[i] as SizeChoiceItem;if(choice!=null)choice.Arrange(bounds);var status=menu.Items[i] as UpdateStatusItem;if(status!=null)status.Arrange(bounds);}return false;}}
     public int BodyWidth=220;
     public System.Drawing.Point? PetAnchor; public int TailX=-1;
     public BubbleMenu(){ShowImageMargin=false;ShowCheckMargin=false;LayoutStyle=ToolStripLayoutStyle.VerticalStackWithOverflow;Padding=new Padding(10,9,10,22);BackColor=Color.FromArgb(255,253,241);ForeColor=Color.FromArgb(89,57,34);Renderer=new BubbleMenuRenderer();DropShadowEnabled=false;}
