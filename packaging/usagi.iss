@@ -1,5 +1,5 @@
 ﻿#ifndef AppRelease
-#define AppRelease "1.6.1"
+#define AppRelease "1.7.0"
 #endif
 [Setup]
 AppId={{55757449-1D38-42D2-A5FA-2C4EAE3A3462}
@@ -30,6 +30,7 @@ Name: "desktopicon"; Description: "바탕화면에 바로가기 만들기"; Flag
 
 [Files]
 Source: "..\우사기.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\UsagiUpdate.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\usagi.png"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\walk.png"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\poses.png"; DestDir: "{app}"; Flags: ignoreversion
