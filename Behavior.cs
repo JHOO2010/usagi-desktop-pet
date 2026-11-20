@@ -41,7 +41,7 @@ partial class Usagi {
         File.WriteAllLines(temp,new[]{"scale="+scale.ToString(CultureInfo.InvariantCulture),"sound="+(sounds.Enabled?"on":"off"),"screen="+screen.DeviceName,"position="+ratio.ToString(CultureInfo.InvariantCulture),"morning="+morningSeen});
         if(File.Exists(preferencesPath))File.Replace(temp,preferencesPath,null);else File.Move(temp,preferencesPath);
     }catch(IOException){}catch(UnauthorizedAccessException){}}
-    void OfferFood(){scatterActive=false;
+    void OfferFood(){CancelSocial();scatterActive=false;
         var area=Screen.FromPoint(new System.Drawing.Point((int)x+Width/2,(int)y+Height-15)).WorkingArea;
         double center=x+Width/2;int side=center<area.Left+area.Width/2?1:-1;
         foodX=Math.Max(area.Left+45,Math.Min(area.Right-45,center+side*145*scale));foodActive=true;paused=false;pendingClicks=0;idleTime=0;hopHeight=0;speed=0;

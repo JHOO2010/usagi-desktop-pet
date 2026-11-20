@@ -18,6 +18,8 @@ Windows 작업표시줄 위를 산책하는 비공식 우사기 데스크톱 펫
 - 우클릭: 쉬기, 점프, 쓰다듬기, 대사, 화면 이동, 크기, 효과음, 종료
 - 10초 동안 마우스를 움직이지 않으면 졸기 시작하며 움직이면 깨어납니다.
 
+복제 우사기들은 마주치면 서로 인사하고, 작은 우사기는 큰 우사기 뒤로 줄지어 걷습니다. 커서를 근처에서 움직이면 다가왔다 도망가는 장난을 하며, 먼저 잠든 우사기가 있으면 옆으로 모여 잠듭니다. 클릭·드래그·먹이 주기가 우선합니다.
+
 걷기 보폭, 가끔 넘어졌다 일어나기, 사라지는 발자국, 밤의 느린 산책, 아침 첫 인사를 포함합니다. 크기·소리·마지막 화면과 위치는 `%LOCALAPPDATA%\UsagiPet\settings.txt`에 저장합니다. 자동 시작은 등록하지 않습니다.
 
 효과음은 기본 출력이 이어폰/헤드셋일 때만 재생하며 원본 대비 50% 음량입니다. 인터넷·AI 연결은 필요하지 않습니다.
@@ -29,7 +31,7 @@ Windows PowerShell에서:
 ```powershell
 .\build.ps1
 .\check.ps1
-.\build-installer.ps1 -Version 1.2.1
+.\build-installer.ps1 -Version 1.3.0
 ```
 
 설치파일 빌드에는 [Inno Setup 6](https://jrsoftware.org/inno-setup/downloads)이 필요합니다. `ISCC.exe`를 PATH에 넣거나 일반 설치 경로 또는 `packaging/inno/`에 두세요.
@@ -37,7 +39,7 @@ Windows PowerShell에서:
 ## 버전별 출시
 
 ```powershell
-.\release.ps1 -Version 1.3.0 -NotesFile .\release-notes\v1.3.0.md
+.\release.ps1 -Version 1.4.0 -NotesFile .\release-notes\v1.4.0.md
 ```
 
 변경 내용을 커밋·푸시한 깨끗한 main 브랜치에서 실행합니다. 빌드와 검증 후 버전 태그, 설치파일, SHA-256 체크섬, 변경 내역을 GitHub Releases에 업로드합니다. 같은 버전을 덮어쓰지 않습니다. GitHub CLI 로그인과 `origin` 연결이 필요합니다.

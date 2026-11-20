@@ -13,7 +13,7 @@ class Check {
  static void Step(object o,double dt,Point cursor){o.GetType().GetMethod("UpdatePet",flags).Invoke(o,new object[]{dt,cursor});}
  static Bitmap Frame(object o){return (Bitmap)o.GetType().GetMethod("DrawFrame",flags).Invoke(o,null);}
  static void Assert(bool value,string message){if(!value)throw new Exception(message);}
- [STAThread] static void Main(){try{Run();Features();Clones();}catch(Exception error){Console.WriteLine("FAIL: "+error.Message);Environment.Exit(1);}}
+ [STAThread] static void Main(){try{Run();Features();Clones();SocialChecks();}catch(Exception error){Console.WriteLine("FAIL: "+error.Message);Environment.Exit(1);}}
  static void Run(){using(var pet=new Usagi()){
    ((PetSound)Get(pet,"sounds")).Enabled=false;
    var area=Screen.PrimaryScreen.WorkingArea;var cursor=new Point(area.Left+10,area.Top+10);Set(pet,"lastCursor",cursor);Set(pet,"x",(double)area.Left+area.Width/2-110);Set(pet,"y",(double)area.Bottom-pet.Height+8);Set(pet,"direction",1);Set(pet,"decisionTime",100.0);
@@ -97,6 +97,21 @@ class Check {
      using(var scene=new Bitmap(960,420))using(var g=Graphics.FromImage(scene)){g.Clear(Color.FromArgb(255,248,226));g.DrawLine(Pens.BurlyWood,0,390,960,390);int n=0;foreach(Usagi copy in list){Set(copy,"x",(double)Get(pet,"x"));Set(copy,"y",(double)Get(pet,"y"));Set(copy,"scatterActive",true);Set(copy,"scatterVX",new[]{-225.0,140.0,-120.0,245.0}[n]);Set(copy,"scatterVY",-235.0-n%2*45);Set(copy,"speechTime",0.0);for(int j=0;j<25;j++)Step(copy,.02,new Point(area.Left,area.Top));using(var frame=Frame(copy))g.DrawImageUnscaled(frame,(int)((double)Get(copy,"x")-(double)Get(pet,"x"))+240,(int)((double)Get(copy,"y")-(double)Get(pet,"y"))+40);n++;}scene.Save("clone-scatter-preview.png");}
 
    }finally{Call(pet,"ClearClones");}Assert(list.Count==0,"Clone cleanup leaked pets");Call(pet,"RefreshCloneMenu");Assert(!((ContextMenuStrip)Get(pet,"menu")).Items.Contains((ToolStripItem)Get(pet,"cleanupMenu")),"Cleanup remained after last clone closed");using(var frame=Frame(pet))Assert(frame.Width>0,"Clone disposal broke shared root images");Console.WriteLine("PASS: four varied clones, scatter/landing, one tray icon, isolated settings and shared asset cleanup.");
+ }}
+
+ static bool SocialStep(object pet,double dt,Point cursor,bool moved){return (bool)pet.GetType().GetMethod("UpdateSocial",flags).Invoke(pet,new object[]{dt,cursor,moved});}
+ static void SocialChecks(){using(var big=new Usagi())using(var small=new Usagi(true,big)){
+   var list=(System.Collections.IList)typeof(Usagi).GetField("livePets",BindingFlags.NonPublic|BindingFlags.Static).GetValue(null);var area=Screen.PrimaryScreen.WorkingArea;var far=new Point(area.Left,area.Top);list.Add(big);list.Add(small);
+   try{
+     foreach(var pet in new[]{big,small}){((PetSound)Get(pet,"sounds")).Enabled=false;Set(pet,"x",area.Left+area.Width/2.0-pet.Width/2);Set(pet,"y",(double)area.Bottom-pet.Height+8);Set(pet,"idleTime",0.0);Set(pet,"greetCooldown",0.0);Set(pet,"socialBreak",0.0);Mood(pet,"Walk");}
+     Set(big,"scale",1.3f);Set(small,"scale",.75f);Set(small,"x",(double)Get(big,"x")+70);Set(big,"direction",1);Set(small,"direction",-1);Set(big,"moving",true);
+     Assert(SocialStep(big,.02,far,false),"Meeting did not start greeting");Assert((double)Get(big,"greetLeft")>0&&(double)Get(small,"greetLeft")>0,"Greeting was not mutual");double position=(double)Get(big,"x");SocialStep(big,.2,far,false);Assert((double)Get(big,"x")==position,"Greeting did not stop walking");SocialStep(small,.3,far,false);Assert((string)Get(small,"words")=="야하~!","Greeting reply missing");
+     Call(big,"CancelSocial");Call(small,"CancelSocial");Set(big,"socialBreak",0.0);Set(small,"socialBreak",0.0);Mood(big,"Walk");Mood(small,"Walk");Set(big,"moving",true);Set(big,"speed",60.0);Set(small,"followCooldown",0.0);Set(small,"x",(double)Get(big,"x")-230);Assert(SocialStep(small,.02,far,false)&&(bool)Get(small,"following"),"Small pet did not follow larger leader");double before=(double)Get(small,"x");for(int i=0;i<40;i++)SocialStep(small,.02,far,false);Assert((double)Get(small,"x")>before+20,"Follower did not approach queue position");
+     Call(small,"CancelSocial");Set(small,"socialBreak",0.0);Set(small,"playCooldown",0.0);Mood(small,"Walk");var cursor=new Point((int)(double)Get(small,"x")+small.Width/2+75,(int)(double)Get(small,"y")+small.Height-55);SocialStep(small,.02,cursor,true);Assert((double)Get(small,"playLeft")>0,"Cursor game did not start");before=(double)Get(small,"x");for(int i=0;i<35;i++)SocialStep(small,.02,cursor,false);Assert((double)Get(small,"x")>before,"Pet did not approach cursor");Set(small,"playLeft",1.0);before=(double)Get(small,"x");for(int i=0;i<45;i++)SocialStep(small,.02,cursor,false);Assert((double)Get(small,"x")<before,"Pet did not run away from cursor");
+     Call(small,"CancelSocial");Set(small,"socialBreak",0.0);Set(small,"idleTime",10.0);Mood(big,"Sleep");Mood(small,"Drowsy");SocialStep(small,.02,far,false);Assert(Get(small,"napFriend")==big,"Pet did not gather beside sleeper");for(int i=0;i<330&&State(small)!="Sleep";i++)SocialStep(small,.02,far,false);Assert(State(small)=="Sleep","Gathering pet never slept");
+     Mood(small,"Walk");Set(small,"idleTime",0.0);Set(small,"playLeft",2.0);Call(small,"OfferFood");Assert((double)Get(small,"playLeft")==0&&!(bool)Get(small,"following"),"Feeding did not cancel social behavior");
+   }finally{list.Remove(small);list.Remove(big);}
+   Console.WriteLine("PASS: mutual greeting/reply, size-ordered following, cursor approach/escape, shared nap gathering and feeding priority.");
  }}
 
 }
