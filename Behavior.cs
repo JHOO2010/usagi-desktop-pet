@@ -80,6 +80,14 @@ partial class Usagi {
     void LeaveTracks(double distance){trackDistance+=distance;if(trackDistance<11*scale)return;trackDistance=0;
         tracks.Add(new Track{X=x+Width/2-direction*12*scale,Y=y+Height-10,Scale=scale,Side=tracks.Count%2});if(tracks.Count>24)tracks.RemoveAt(0);
     }
+    void DrawHopWind(Graphics g,float bottom){if(mood!=Mood.Hop||stateTime>.43||hopHeight<2)return;
+        for(int i=0;i<3;i++){double u=(stateTime-i*.035)/.34;if(u<=0||u>=1)continue;float fade=(float)Math.Sin(u*Math.PI);int alpha=(int)(165*fade);float side=i-1,startX=Width/2+side*11*scale,startY=bottom+3*scale;float length=(float)(8+u*11)*scale;
+            using(var path=new GraphicsPath()){path.AddBezier(startX,startY,startX-side*2*scale,startY+length*.25f,startX+side*4*scale,startY+length*.75f,startX+side*6*scale,startY+length);
+                using(var edge=new Pen(Color.FromArgb((int)(alpha*.65),103,74,47),3.2f*scale)){edge.StartCap=edge.EndCap=LineCap.Round;g.DrawPath(edge,path);}
+                using(var ink=new Pen(Color.FromArgb(alpha,255,247,214),1.6f*scale)){ink.StartCap=ink.EndCap=LineCap.Round;g.DrawPath(ink,path);}
+            }
+        }
+    }
     void DrawDetails(Graphics g){
         foreach(var track in tracks){float alpha=(float)(1-track.Age/1.1);using(var ink=new SolidBrush(Color.FromArgb((int)(65*alpha),116,83,57))){float px=(float)(track.X-x),py=(float)(track.Y-y)-track.Side*2*track.Scale;g.FillEllipse(ink,px-3*track.Scale,py-2*track.Scale,6*track.Scale,2.5f*track.Scale);}}
         if(foodActive&&mood!=Mood.Eat)DrawPizzaBun(g,(float)(foodX-x),Height-17,scale,1);

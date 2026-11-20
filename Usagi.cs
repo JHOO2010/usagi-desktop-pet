@@ -215,7 +215,7 @@ partial class Usagi : Form {
         if(mood==Mood.Eat){int a,b;float mix;EatingFrames(stateTime,out a,out b,out mix);pose=eating[a];factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;bob=(float)ChewPulse(stateTime)*.65f*scale;bottom-=bob;angle=stateTime<.65?(float)Math.Sin(stateTime/.65*Math.PI)*3:((float)ChewPulse(stateTime)-.5f)*.65f;}
         if(mood==Mood.Trip||mood==Mood.Recover){int a,b;float mix;StumbleFrames(mood==Mood.Recover,stateTime,out a,out b,out mix);pose=(direction>0?stumble:leftStumble)[a];factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;angle=0;squash=0;}
         if(mood==Mood.Look)angle+=(float)gazeTilt;
-        DrawDetails(g);DrawHearts(g);
+        DrawDetails(g);DrawHearts(g);DrawHopWind(g,bottom);
         var saved=g.Save();g.TranslateTransform(Width/2,bottom);g.RotateTransform(angle);g.ScaleTransform(1+squash,1-squash);if(mood==Mood.Trip||mood==Mood.Recover)DrawStumble(g);else if(mood==Mood.Eat)DrawEatingSprites(g);else g.DrawImage(pose,-width/2,-h,width,h);g.Restore(saved);
         if(mood==Mood.Sleep)DrawSleepText(g,width,h);
         petTop=bottom-h;
