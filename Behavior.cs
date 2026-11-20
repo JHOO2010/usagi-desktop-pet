@@ -72,11 +72,11 @@ partial class Usagi {
             if(Math.Abs(distance)<19*scale){speed=0;moving=false;Change(Mood.Eat);Say("푸루루루~");}}
         if(mood==Mood.Eat){idleTime=0;moving=false;speed=0;if(stateTime>=5.3){foodActive=false;EmitHearts(false);Say("야하!");Change(Mood.Look);}return true;}
         if(mood==Mood.Nuzzle){idleTime=0;moving=false;speed=0;if(stateTime>1.8){Change(Mood.Look);decisionTime=2;}return true;}
-        if(mood==Mood.Trip){moving=false;speed=0;if(stateTime>.65){Change(Mood.Recover);AutoSay("…하아?");}return true;}
-        if(mood==Mood.Recover){moving=false;if(stateTime>1.1){Change(Mood.Walk);targetSpeed=50;decisionTime=2;}return true;}
+        if(mood==Mood.Trip){moving=false;speed=0;MoveStumble(dt);if(stateTime>.72){Change(Mood.Recover);AutoSay("…하아?");}return true;}
+        if(mood==Mood.Recover){moving=false;if(stateTime>1.35){Change(Mood.Walk);targetSpeed=50;decisionTime=2;}return true;}
         return false;
     }
-    void BeginTrip(){speed=0;tripCooldown=90+rng.NextDouble()*100;Change(Mood.Trip);speechTime=0;}
+    void BeginTrip(){stumbleVelocity=direction*Math.Max(35,Math.Min(115,speed));CancelSocial();speed=0;tripCooldown=90+rng.NextDouble()*100;Change(Mood.Trip);speechTime=0;}
     void LeaveTracks(double distance){trackDistance+=distance;if(trackDistance<11*scale)return;trackDistance=0;
         tracks.Add(new Track{X=x+Width/2-direction*12*scale,Y=y+Height-10,Scale=scale,Side=tracks.Count%2});if(tracks.Count>24)tracks.RemoveAt(0);
     }
@@ -134,24 +134,6 @@ partial class Usagi {
     static int FoodBites(double time){int bites=0;foreach(double bite in new[]{.95,1.8,2.65,3.5})if(time>=bite)bites++;return bites;}
     static double ChewPulse(double time){if(time<.7||time>4.6)return 0;double phase=(time-.7)% .85;return Math.Pow(Math.Max(0,Math.Sin(phase/.85*Math.PI*4)),2);}
     static float FoodRemaining(double time){double eaten=0;foreach(double bite in new[]{.95,1.8,2.65,3.5}){double u=Math.Max(0,Math.Min(1,(time-bite)/.18));eaten+=.225*u*u*(3-2*u);}eaten+=.1*Math.Max(0,Math.Min(1,(time-3.9)/.25));return (float)Math.Max(0,1-eaten);}
-    void DrawEating(Graphics g,float bottom){
-        double time=stateTime;float chew=(float)ChewPulse(time);int bites=FoodBites(time);
-        float mouthX=Width/2+2*scale,mouthY=bottom-40*scale;
-        // The bun follows the same body transform, so it never slides off the mouth.
-        float lift=(float)Math.Max(0,Math.Min(1,time/.65));lift=lift*lift*(3-2*lift);
-        float cx=(float)(foodX-x)+(mouthX-(float)(foodX-x))*lift;
-        if(time<4.15){float remaining=FoodRemaining(time),cut=-20+25*(1-remaining);
-            float heldY=mouthY-cut*.9f*scale;float baseY=(Height-17)+(heldY-(Height-17))*lift;
-            // The bitten upper edge stays at the lips; the rest advances into the mouth.
-            var foodLayer=g.Save();if(lift>.99)g.SetClip(new RectangleF(Width/2-40*scale,mouthY-.5f*scale,80*scale,Height-mouthY+20),CombineMode.Intersect);
-            DrawPizzaBun(g,cx-2*scale*lift,baseY-chew*.7f*scale,.9f*scale,remaining,0);g.Restore(foodLayer);
-        }
-        if(time>.7&&time<4.6){using(var cheek=new SolidBrush(Color.FromArgb((int)(28+chew*38),245,145,148))){g.FillEllipse(cheek,Width/2-24*scale,mouthY-5*scale,(8+chew*2)*scale,5*scale);g.FillEllipse(cheek,Width/2+15*scale,mouthY-5*scale,(8+chew*2)*scale,5*scale);}
-        }
-        foreach(double bite in new[]{.95,1.8,2.65,3.5}){double age=time-bite;if(age<0||age>.42)continue;
-            for(int i=0;i<3;i++){float px=mouthX+(float)((i-1)*18*age)*scale,py=mouthY+(float)(-22*age+90*age*age)*scale;var saved=g.Save();g.TranslateTransform(px,py);g.RotateTransform((float)(age*220+i*35));using(var crumb=new SolidBrush(Color.FromArgb((int)(220*(1-age/.42)),239,150,58)))g.FillRectangle(crumb,-1.2f*scale,-.8f*scale,2.4f*scale,1.6f*scale);g.Restore(saved);}}
-        if(time>=4.25&&time<4.65){using(var crumb=new SolidBrush(Color.FromArgb((int)(160*(1-(time-4.25)/.4)),235,191,110)))g.FillEllipse(crumb,mouthX+4*scale,mouthY+8*scale,2*scale,2*scale);}
-    }
     static void DrawPizzaBun(Graphics g,float cx,float cy,float size,float remaining){DrawPizzaBun(g,cx,cy,size,remaining,0);}
     static void DrawPizzaBun(Graphics g,float cx,float cy,float size,float remaining,float rotation){if(remaining<=0)return;var saved=g.Save();g.TranslateTransform(cx,cy);g.ScaleTransform(size,size);g.RotateTransform(rotation);
         using(var bun=new GraphicsPath()){

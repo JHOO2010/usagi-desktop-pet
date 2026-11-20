@@ -66,7 +66,7 @@ partial class Usagi : Form {
     readonly System.Diagnostics.Stopwatch frameClock=System.Diagnostics.Stopwatch.StartNew();
     readonly System.Drawing.Text.PrivateFontCollection petFonts=new System.Drawing.Text.PrivateFontCollection();
     Font speechFont;
-    Bitmap sprite; readonly Bitmap[] walk=new Bitmap[4],leftWalk=new Bitmap[4],poses=new Bitmap[4];
+    Bitmap sprite; readonly Bitmap[] walk=new Bitmap[4],leftWalk=new Bitmap[4],poses=new Bitmap[4];readonly Bitmap[] stumble=new Bitmap[6],leftStumble=new Bitmap[6],eating=new Bitmap[6];
     readonly System.Collections.Generic.Dictionary<Bitmap,float> headWidths=new System.Collections.Generic.Dictionary<Bitmap,float>();
     Mood mood=Mood.Walk; Mood? settling; bool paused,dragging,pointerDown,moving; int direction=-1,wantedDirection=-1;
     double pressX,pressY,restDuration=2,stretchDuration=1.05;
@@ -92,9 +92,11 @@ partial class Usagi : Form {
         using(var original=new Bitmap(System.IO.Path.Combine(root,"usagi.png")))sprite=Crop(original);
         LoadSheet(System.IO.Path.Combine(root,"walk.png"),walk);
         LoadSheet(System.IO.Path.Combine(root,"poses.png"),poses);
+        LoadSheet(System.IO.Path.Combine(root,"eating.png"),eating);foreach(var frame in eating)headWidths[frame]=MeasureHeadWidth(frame);
+        LoadSheet(System.IO.Path.Combine(root,"stumble.png"),stumble);for(int i=0;i<6;i++){leftStumble[i]=new Bitmap(stumble[i]);leftStumble[i].RotateFlip(RotateFlipType.RotateNoneFlipX);headWidths[stumble[i]]=MeasureHeadWidth(stumble[i]);headWidths[leftStumble[i]]=headWidths[stumble[i]];}
         for(int i=0;i<4;i++){leftWalk[i]=new Bitmap(walk[i]);leftWalk[i].RotateFlip(RotateFlipType.RotateNoneFlipX);}
         headWidths[sprite]=MeasureHeadWidth(sprite);foreach(var b in walk)headWidths[b]=MeasureHeadWidth(b);foreach(var b in leftWalk)headWidths[b]=MeasureHeadWidth(b);foreach(var b in poses)headWidths[b]=MeasureHeadWidth(b);
-        }else{sprite=shared.sprite;Array.Copy(shared.walk,walk,4);Array.Copy(shared.leftWalk,leftWalk,4);Array.Copy(shared.poses,poses,4);foreach(var pair in shared.headWidths)headWidths[pair.Key]=pair.Value;}
+        }else{sprite=shared.sprite;Array.Copy(shared.walk,walk,4);Array.Copy(shared.leftWalk,leftWalk,4);Array.Copy(shared.poses,poses,4);Array.Copy(shared.eating,eating,6);Array.Copy(shared.stumble,stumble,6);Array.Copy(shared.leftStumble,leftStumble,6);foreach(var pair in shared.headWidths)headWidths[pair.Key]=pair.Value;}
         var area=Screen.PrimaryScreen.WorkingArea;x=area.Right-Width/2-110;y=area.Bottom-Height+8;lastCursor=Cursor.Position;nextSpeechTime=7+rng.NextDouble()*3;LoadPreferences();
         menu=new BubbleMenu{Font=speechFont};Func<string,ToolStripItem> add=text=>{var item=new BubbleMenuItem(text);menu.Items.Add(item);return item;};var pause=add("잠깐 쉬기");pause.Click+=(s,e)=>{paused=!paused;speed=0;moving=false;pause.Text=paused?"다시 산책하기":"잠깐 쉬기";};
         add("폴짝!").Click+=(s,e)=>StartHop();add("쓰다듬기 ♥").Click+=(s,e)=>Pet();add("한마디 해줘!").Click+=(s,e)=>Speak();add("피자만두 주기").Click+=(s,e)=>OfferFood();add("우사기 복제하기").Click+=(s,e)=>DuplicatePets();cleanupMenu=new BubbleMenuItem("우사기 정리");cleanupMenu.Click+=(s,e)=>ClearClones();
@@ -110,9 +112,9 @@ partial class Usagi : Form {
         MouseMove+=(s,e)=>{MovePointer(Cursor.Position);if(dragging)Render();};
         MouseUp+=(s,e)=>{if(e.Button==MouseButtons.Left){EndPointer(frameClock.Elapsed.TotalSeconds,Cursor.Position);Capture=false;}};
         timer.Interval=16;timer.Tick+=(s,e)=>TickPet();Shown+=(s,e)=>{lastTick=frameClock.Elapsed.TotalSeconds;if(!livePets.Contains(this))livePets.Add(this);if(!isClone)StartDayGreeting(DateTime.Now);timer.Start();};
-        FormClosed+=(s,e)=>{if(!isClone)ClearClones();livePets.Remove(this);SavePreferences();timer.Dispose();sounds.Dispose();tray.Visible=false;tray.Dispose();if(trayIcon!=null)trayIcon.Dispose();menu.Dispose();cleanupMenu.Dispose();monitorMenu.Dispose();speechFont.Dispose();petFonts.Dispose();if(!isClone){sprite.Dispose();foreach(var b in walk)b.Dispose();foreach(var b in leftWalk)b.Dispose();foreach(var b in poses)b.Dispose();}};
+        FormClosed+=(s,e)=>{if(!isClone)ClearClones();livePets.Remove(this);SavePreferences();timer.Dispose();sounds.Dispose();tray.Visible=false;tray.Dispose();if(trayIcon!=null)trayIcon.Dispose();menu.Dispose();cleanupMenu.Dispose();monitorMenu.Dispose();speechFont.Dispose();petFonts.Dispose();if(!isClone){sprite.Dispose();foreach(var b in walk)b.Dispose();foreach(var b in leftWalk)b.Dispose();foreach(var b in poses)b.Dispose();foreach(var b in eating)b.Dispose();foreach(var b in stumble)b.Dispose();foreach(var b in leftStumble)b.Dispose();}};
     }
-    static void LoadSheet(string path,Bitmap[] target){using(var sheet=new Bitmap(path))for(int i=0;i<4;i++){int l=i*sheet.Width/4,r=(i+1)*sheet.Width/4;using(var cell=sheet.Clone(new Rectangle(l,0,r-l,sheet.Height),PixelFormat.Format32bppArgb))target[i]=Crop(cell);}}
+    static void LoadSheet(string path,Bitmap[] target){using(var sheet=new Bitmap(path))for(int i=0;i<target.Length;i++){int l=i*sheet.Width/target.Length,r=(i+1)*sheet.Width/target.Length;using(var cell=sheet.Clone(new Rectangle(l,0,r-l,sheet.Height),PixelFormat.Format32bppArgb))target[i]=Crop(cell);}}
     // Measure the face band, excluding upright/floppy ears and feet. All poses share one head scale.
     static float MeasureHeadWidth(Bitmap image){int widest=1;for(int y=(int)(image.Height*.45);y<(int)(image.Height*.70);y++){
         int left=image.Width,right=-1;for(int x=0;x<image.Width;x++)if(image.GetPixel(x,y).A>100){left=Math.Min(left,x);right=x;}if(right>=left)widest=Math.Max(widest,right-left+1);
@@ -209,12 +211,11 @@ partial class Usagi : Form {
         float squash=landing>0?(float)Math.Sin(landing/.26*Math.PI)*.1f:0;
         if(!paused&&mood==Mood.Sleep){h+=(float)Math.Sin(t*2.2)*1.2f;}
         if(mood==Mood.Nuzzle){pose=poses[1];factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;angle=(float)Math.Sin(t*5)*2;}
-        if(mood==Mood.Eat){pose=poses[0];factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;bob=(float)ChewPulse(stateTime)*.65f*scale;bottom-=bob;angle=stateTime<.65?(float)Math.Sin(stateTime/.65*Math.PI)*3:((float)ChewPulse(stateTime)-.5f)*.65f;}
-        if(mood==Mood.Trip){pose=poses[3];factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;angle=direction*(float)(Math.Sin(Math.Min(1,stateTime/.5)*Math.PI/2)*68);bottom-=8*scale;}
-        if(mood==Mood.Recover){pose=poses[0];factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;angle=(float)Math.Sin(stateTime*7)*8;}
+        if(mood==Mood.Eat){int a,b;float mix;EatingFrames(stateTime,out a,out b,out mix);pose=eating[a];factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;bob=(float)ChewPulse(stateTime)*.65f*scale;bottom-=bob;angle=stateTime<.65?(float)Math.Sin(stateTime/.65*Math.PI)*3:((float)ChewPulse(stateTime)-.5f)*.65f;}
+        if(mood==Mood.Trip||mood==Mood.Recover){int a,b;float mix;StumbleFrames(mood==Mood.Recover,stateTime,out a,out b,out mix);pose=(direction>0?stumble:leftStumble)[a];factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;angle=0;squash=0;}
         if(mood==Mood.Look)angle+=(float)gazeTilt;
         DrawDetails(g);DrawHearts(g);
-        var saved=g.Save();g.TranslateTransform(Width/2,bottom);g.RotateTransform(angle);g.ScaleTransform(1+squash,1-squash);g.DrawImage(pose,-width/2,-h,width,h);if(mood==Mood.Eat){var eating=g.Save();g.TranslateTransform(-Width/2,-bottom);DrawEating(g,bottom);g.Restore(eating);}g.Restore(saved);
+        var saved=g.Save();g.TranslateTransform(Width/2,bottom);g.RotateTransform(angle);g.ScaleTransform(1+squash,1-squash);if(mood==Mood.Trip||mood==Mood.Recover)DrawStumble(g);else if(mood==Mood.Eat)DrawEatingSprites(g);else g.DrawImage(pose,-width/2,-h,width,h);g.Restore(saved);
         if(mood==Mood.Sleep)DrawSleepText(g,width,h);
         petTop=bottom-h;
         if(speechTime>0&&!menu.Visible)DrawSpeech(g,Math.Max(4,bottom-h-72*scale));
