@@ -13,6 +13,8 @@ Windows 작업표시줄 위를 산책하는 비공식 우사기 데스크톱 펫
 - 머리 위에서 마우스를 부드럽게 움직이기: 눈을 감고 좋아하기
 - 가까이에서 마우스 흔들기: 쳐다보기와 고개 갸웃
 - 우클릭 → 당근 주기: 달려가 먹기
+- 우클릭 → 우사기 복제하기: 다양한 크기의 네 마리가 퍼진 뒤 각자 산책
+- 복제 우사기 정리로 원본만 남기거나, 복제본을 개별 닫을 수 있습니다. 원본의 모두 종료는 전부 닫습니다. 최대 16마리이며 복제본은 다음 실행 시 복원하지 않습니다.
 - 우클릭: 쉬기, 점프, 쓰다듬기, 대사, 화면 이동, 크기, 효과음, 종료
 - 10초 동안 마우스를 움직이지 않으면 졸기 시작하며 움직이면 깨어납니다.
 
@@ -27,7 +29,7 @@ Windows PowerShell에서:
 ```powershell
 .\build.ps1
 .\check.ps1
-.\build-installer.ps1 -Version 1.1.0
+.\build-installer.ps1 -Version 1.2.0
 ```
 
 설치파일 빌드에는 [Inno Setup 6](https://jrsoftware.org/inno-setup/downloads)이 필요합니다. `ISCC.exe`를 PATH에 넣거나 일반 설치 경로 또는 `packaging/inno/`에 두세요.
@@ -35,7 +37,7 @@ Windows PowerShell에서:
 ## 버전별 출시
 
 ```powershell
-.\release.ps1 -Version 1.2.0 -NotesFile .\release-notes\v1.2.0.md
+.\release.ps1 -Version 1.3.0 -NotesFile .\release-notes\v1.3.0.md
 ```
 
 변경 내용을 커밋·푸시한 깨끗한 main 브랜치에서 실행합니다. 빌드와 검증 후 버전 태그, 설치파일, SHA-256 체크섬, 변경 내역을 GitHub Releases에 업로드합니다. 같은 버전을 덮어쓰지 않습니다. GitHub CLI 로그인과 `origin` 연결이 필요합니다.
