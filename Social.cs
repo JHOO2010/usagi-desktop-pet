@@ -3,6 +3,16 @@ using System.Drawing;
 using System.Windows.Forms;
 
 partial class Usagi {
+    double wakeDelay=-1;
+    double WakeDistance(System.Drawing.Point cursor){double dx=cursor.X-(x+Width/2),dy=cursor.Y-(y+Height-55*scale);return Math.Sqrt(dx*dx+dy*dy);}
+    void UpdateSleepWake(double dt,System.Drawing.Point cursor,bool moved){
+        if(mood!=Mood.Sleep&&mood!=Mood.Drowsy){wakeDelay=-1;return;}
+        if(paused||menu.Visible)return;
+        if(moved&&wakeDelay<0){int sleepers=0,rank=0;double distance=WakeDistance(cursor);foreach(var peer in livePets)if(!peer.IsDisposed&&(peer.mood==Mood.Sleep||peer.mood==Mood.Drowsy)&&!peer.paused){sleepers++;double other=peer.WakeDistance(cursor);if(peer!=this&&(other<distance-.01||Math.Abs(other-distance)<.01&&livePets.IndexOf(peer)<livePets.IndexOf(this)))rank++;}
+            if(sleepers<=1){Wake();return;}wakeDelay=Math.Min(6,.12+rank*.32+Math.Min(1.6,distance/1000)+rng.NextDouble()*.25);
+        }
+        if(wakeDelay>=0){wakeDelay-=dt;if(wakeDelay<=0)Wake();}
+    }
     double greetLeft,greetReplyDelay=-1,greetCooldown=3,socialBreak,playLeft,playCooldown=7,followLeft,followCooldown=5,napSeekTime;
     Usagi napFriend;bool following;
     bool SocialBusy {get{return IsDisposed||paused||menu.Visible||pointerDown||dragging||pendingClicks>0||foodActive||scatterActive||mood==Mood.Hop||mood==Mood.Fall||mood==Mood.Eat||mood==Mood.Nuzzle||mood==Mood.Trip||mood==Mood.Recover||mood==Mood.Stretch;}}

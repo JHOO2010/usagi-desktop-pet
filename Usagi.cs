@@ -106,7 +106,7 @@ partial class Usagi : Form {
         ContextMenuStrip=menu;
         trayIcon=Icon.ExtractAssociatedIcon(Application.ExecutablePath);
         tray=new NotifyIcon{Icon=trayIcon,Text="우사기 · 1번 폴짝 / 2번 하트 / 3번 하트 폭발",ContextMenuStrip=menu,Visible=!isClone};tray.DoubleClick+=(s,e)=>{var a=Screen.PrimaryScreen.WorkingArea;x=a.Right-Width/2-110;y=a.Bottom-Height+8;StartHop();};
-        MouseDown+=(s,e)=>{if(e.Button==MouseButtons.Left){BeginPointer(Cursor.Position);Capture=true;}};
+        MouseDown+=(s,e)=>{if(e.Button==MouseButtons.Right&&(mood==Mood.Sleep||mood==Mood.Drowsy))Wake();if(e.Button==MouseButtons.Left){BeginPointer(Cursor.Position);Capture=true;}};
         MouseMove+=(s,e)=>{MovePointer(Cursor.Position);if(dragging)Render();};
         MouseUp+=(s,e)=>{if(e.Button==MouseButtons.Left){EndPointer(frameClock.Elapsed.TotalSeconds,Cursor.Position);Capture=false;}};
         timer.Interval=16;timer.Tick+=(s,e)=>TickPet();Shown+=(s,e)=>{lastTick=frameClock.Elapsed.TotalSeconds;if(!livePets.Contains(this))livePets.Add(this);if(!isClone)StartDayGreeting(DateTime.Now);timer.Start();};
@@ -128,9 +128,9 @@ partial class Usagi : Form {
     void AutoSay(string text){if(nextSpeechTime<=0)Say(text);}
     bool autonomousSpeech;
     void Speak(){Say(Choose(mood==Mood.Sleep?new[]{"…","후웅…","…후우웅"}:moving?walkPhrases:idlePhrases));}
-    void Wake(){idleTime=0;if(mood==Mood.Sleep||mood==Mood.Drowsy){Change(Mood.Stretch);AutoSay("후우웅~");}else Change(Mood.Walk);}
+    void Wake(){wakeDelay=-1;CancelSocial();idleTime=0;if(mood==Mood.Sleep||mood==Mood.Drowsy){Change(Mood.Stretch);AutoSay("후우웅~");}else Change(Mood.Walk);}
     void Pet(){CancelSocial();idleTime=0;heartTime=0;EmitHearts(false);sounds.Play("heart");Say("푸루야!");}
-    void BeginPointer(System.Drawing.Point point){CancelSocial();scatterActive=false;foodActive=false;pointerDown=true;dragging=false;dragStart=point;pressX=x;pressY=y;idleTime=0;}
+    void BeginPointer(System.Drawing.Point point){if(mood==Mood.Sleep||mood==Mood.Drowsy)Wake();CancelSocial();scatterActive=false;foodActive=false;pointerDown=true;dragging=false;dragStart=point;pressX=x;pressY=y;idleTime=0;}
     void MovePointer(System.Drawing.Point point){if(!pointerDown)return;double dx=point.X-dragStart.X,dy=point.Y-dragStart.Y;
         if(!dragging&&(Math.Abs(dx)>=Math.Max(6,SystemInformation.DragSize.Width/2)||Math.Abs(dy)>=Math.Max(6,SystemInformation.DragSize.Height/2))){dragging=true;pendingClicks=0;speed=0;hopHeight=0;Change(Mood.Dragged);}
         if(dragging){x=pressX+dx;y=pressY+dy;}
@@ -161,7 +161,7 @@ partial class Usagi : Form {
         sounds.Tick(dt);
         for(int i=hearts.Count-1;i>=0;i--){hearts[i].Age+=dt;if(hearts[i].Age>=hearts[i].Life)hearts.RemoveAt(i);}
         int mx=cursor.X-lastCursor.X,my=cursor.Y-lastCursor.Y;
-        UpdateDetails(dt,cursor,mx,my);if(mx*mx+my*my>9){idleTime=0;if(mood==Mood.Sleep||mood==Mood.Drowsy){Change(Mood.Stretch);AutoSay("후우웅~");}}else idleTime+=dt;lastCursor=cursor;
+        UpdateDetails(dt,cursor,mx,my);if(mx*mx+my*my>9)idleTime=0;else idleTime+=dt;UpdateSleepWake(dt,cursor,mx*mx+my*my>9);lastCursor=cursor;
         if(paused||menu.Visible){moving=false;return;}
         var area=Screen.FromPoint(new System.Drawing.Point((int)x+Width/2,(int)y+Height-15)).WorkingArea;double floor=area.Bottom-Height+8;
         if(dragging){moving=false;return;}
