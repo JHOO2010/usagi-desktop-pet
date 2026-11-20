@@ -1,5 +1,5 @@
 ﻿#ifndef AppRelease
-#define AppRelease "1.10.3"
+#define AppRelease "1.10.4"
 #endif
 [Setup]
 AppId={{55757449-1D38-42D2-A5FA-2C4EAE3A3462}
@@ -41,6 +41,9 @@ Source: "..\온글잎 꾹지체.ttf"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\sounds\*.wav"; DestDir: "{app}\sounds"; Flags: ignoreversion
 Source: "..\sounds\SOURCES.txt"; DestDir: "{app}\sounds"; Flags: ignoreversion
 Source: "설치후_사용법.txt"; DestDir: "{app}"; DestName: "사용법.txt"; Flags: ignoreversion
+
+Source: "..\fonts\*.ttf"; DestDir: "{app}\fonts"; Flags: ignoreversion
+Source: "..\fonts\OFL.txt"; DestDir: "{app}\fonts"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\우사기 산책 펫"; Filename: "{app}\우사기.exe"; WorkingDir: "{app}"
