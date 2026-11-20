@@ -154,6 +154,7 @@ partial class Usagi : Form {
     static double Approach(double value,double goal,double delta){return value<goal?Math.Min(goal,value+delta):Math.Max(goal,value-delta);}
     void TickPet(){RefreshFrameRate(false);double now=frameClock.Elapsed.TotalSeconds,dt=Math.Max(.001,Math.Min(.07,now-lastTick));lastTick=now;if(pendingClicks>0&&now>=clickDeadline&&!pointerDown)ResolveClicks();UpdatePet(dt,Cursor.Position);Render();}
     void UpdatePet(double dt,System.Drawing.Point cursor){
+        if(infoOpen)return;
         t+=dt;speechTime=Math.Max(0,speechTime-dt);nextSpeechTime-=dt;heartTime=Math.Max(0,heartTime-dt);curiosityCooldown-=dt;landing=Math.Max(0,landing-dt);
         sounds.Tick(dt);
         for(int i=hearts.Count-1;i>=0;i--){hearts[i].Age+=dt;if(hearts[i].Age>=hearts[i].Life)hearts.RemoveAt(i);}
