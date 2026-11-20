@@ -13,7 +13,7 @@ class Check {
  static void Step(object o,double dt,Point cursor){o.GetType().GetMethod("UpdatePet",flags).Invoke(o,new object[]{dt,cursor});}
  static Bitmap Frame(object o){return (Bitmap)o.GetType().GetMethod("DrawFrame",flags).Invoke(o,null);}
  static void Assert(bool value,string message){if(!value)throw new Exception(message);}
- [STAThread] static void Main(){try{Run();Features();Clones();SocialChecks();WrappingChecks();MischiefChecks();UpdateCheck.Run();}catch(Exception error){Console.WriteLine("FAIL: "+error.Message);Environment.Exit(1);}}
+ [STAThread] static void Main(){try{Run();Features();Clones();SocialChecks();WrappingChecks();MischiefChecks();UpdateCheck.Run();StartupChecks();}catch(Exception error){Console.WriteLine("FAIL: "+error.Message);Environment.Exit(1);}}
  static void Run(){using(var pet=new Usagi()){
    ((PetSound)Get(pet,"sounds")).Enabled=false;
    var area=Screen.PrimaryScreen.WorkingArea;var cursor=new Point(area.Left+10,area.Top+10);Set(pet,"lastCursor",cursor);Set(pet,"x",(double)area.Left+area.Width/2-110);Set(pet,"y",(double)area.Bottom-pet.Height+8);Set(pet,"direction",1);Set(pet,"decisionTime",100.0);
@@ -142,5 +142,11 @@ Step(pet,.45,far);Assert(State(pet)=="Recover","Recovery stage missing");Step(pe
    }finally{foreach(var pet in new[]{root,close,other}){Call(pet,"LeaveFoodRace");list.Remove(pet);}}
    Console.WriteLine("PASS: domino surprise hops/cooldown, one shared bun and exclusive winner, race cancellation, generated wiggle/pout frames.");
  }}
+
+ static void StartupChecks(){string keyPath=@"Software\UsagiPet\Tests\Startup-"+Guid.NewGuid().ToString("N"),executable=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"우사기 테스트", "우사기.exe"),other=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"다른 위치", "우사기.exe");
+   try{Assert(!PetStartup.Enabled(executable,keyPath),"Startup should default off");PetStartup.SetEnabled(true,executable,keyPath);Assert(PetStartup.Enabled(executable,keyPath),"Startup enable failed");using(var key=Microsoft.Win32.Registry.CurrentUser.OpenSubKey(keyPath)){Assert((string)key.GetValue(PetStartup.ValueName)=="\""+executable+"\"","Startup path with spaces is not quoted");}
+     PetStartup.SetEnabled(false,other,keyPath);Assert(PetStartup.Enabled(executable,keyPath),"Startup removal affected another install");PetStartup.SetEnabled(false,executable,keyPath);Assert(!PetStartup.Enabled(executable,keyPath),"Startup disable failed");
+   }finally{Microsoft.Win32.Registry.CurrentUser.DeleteSubKey(keyPath,false);}Console.WriteLine("PASS: per-user startup toggle, quoted Unicode/space paths and ownership-safe removal in isolated test key.");
+ }
 
 }

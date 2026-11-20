@@ -1,5 +1,5 @@
 ﻿#ifndef AppRelease
-#define AppRelease "1.7.0"
+#define AppRelease "1.8.0"
 #endif
 [Setup]
 AppId={{55757449-1D38-42D2-A5FA-2C4EAE3A3462}
@@ -49,3 +49,18 @@ Name: "{autodesktop}\우사기 산책 펫"; Filename: "{app}\우사기.exe"; Wor
 
 [Run]
 Filename: "{app}\우사기.exe"; Description: "우사기 산책 펫 실행"; Flags: nowait postinstall skipifsilent
+
+[Code]
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  Command: String;
+  Expected: String;
+begin
+  if CurUninstallStep = usUninstall then
+  begin
+    Expected := '"' + ExpandConstant('{app}\우사기.exe') + '"';
+    if RegQueryStringValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'UsagiDesktopPet', Command) then
+      if CompareText(Command, Expected) = 0 then
+        RegDeleteValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'UsagiDesktopPet');
+  end;
+end;
