@@ -92,6 +92,7 @@ partial class Usagi {
         if(any&&!menu.Items.Contains(cleanupMenu)){cleanupMenu.AutoSize=false;cleanupMenu.Size=new Size(220,33);menu.Items.Insert(6,cleanupMenu);}
         else if(!any&&menu.Items.Contains(cleanupMenu))menu.Items.Remove(cleanupMenu);
     }
+    void RefreshMonitorMenu(){if(Screen.AllScreens.Length>1){if(!menu.Items.Contains(monitorMenu)){monitorMenu.AutoSize=false;monitorMenu.Size=new Size(220,33);menu.Items.Insert(menu.Items.Contains(cleanupMenu)?7:6,monitorMenu);}}else if(menu.Items.Contains(monitorMenu))menu.Items.Remove(monitorMenu);}
     void DuplicatePets(){int available=Math.Max(0,16-livePets.Count-clonesPending);clonesPending+=Math.Min(4,available);cloneSequence=0;cloneDelay=0;Say("야하아!!");}
     void ClearClones(){foreach(var pet in livePets.ToArray()){pet.clonesPending=0;if(pet.isClone&&!pet.IsDisposed)pet.Close();}clonesPending=0;}
     void UpdateCloneQueue(double dt){if(clonesPending<=0||IsDisposed)return;cloneDelay-=dt;if(cloneDelay>0)return;
