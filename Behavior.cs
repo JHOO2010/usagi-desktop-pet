@@ -10,8 +10,8 @@ partial class Usagi {
     double sleepInkPoll;bool lightSleepInk;
     class Track {public double X,Y,Age;public float Scale;public int Side;}
     readonly System.Collections.Generic.List<Track> tracks=new System.Collections.Generic.List<Track>();
-    double trackDistance,tripCooldown=95,strokeTime,strokeCooldown,gazeTilt,wiggleTime,lastWiggle,saveIn=10,carrotX;
-    int wiggleDirection;bool carrotActive;string morningSeen="";
+    double trackDistance,tripCooldown=95,strokeTime,strokeCooldown,gazeTilt,wiggleTime,lastWiggle,saveIn=10,foodX;
+    int wiggleDirection;bool foodActive;string morningSeen="";
     string preferencesPath=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"UsagiPet","settings.txt");
     bool preferencesEnabled=Path.GetFileName(Application.ExecutablePath)=="우사기.exe";
     bool SaveEnabled {get{return preferencesEnabled;}}
@@ -41,11 +41,11 @@ partial class Usagi {
         File.WriteAllLines(temp,new[]{"scale="+scale.ToString(CultureInfo.InvariantCulture),"sound="+(sounds.Enabled?"on":"off"),"screen="+screen.DeviceName,"position="+ratio.ToString(CultureInfo.InvariantCulture),"morning="+morningSeen});
         if(File.Exists(preferencesPath))File.Replace(temp,preferencesPath,null);else File.Move(temp,preferencesPath);
     }catch(IOException){}catch(UnauthorizedAccessException){}}
-    void OfferCarrot(){scatterActive=false;
+    void OfferFood(){scatterActive=false;
         var area=Screen.FromPoint(new System.Drawing.Point((int)x+Width/2,(int)y+Height-15)).WorkingArea;
         double center=x+Width/2;int side=center<area.Left+area.Width/2?1:-1;
-        carrotX=Math.Max(area.Left+45,Math.Min(area.Right-45,center+side*145*scale));carrotActive=true;paused=false;pendingClicks=0;idleTime=0;hopHeight=0;speed=0;
-        Change(Mood.Walk);direction=carrotX>center?1:-1;targetSpeed=112;Say("우라!");
+        foodX=Math.Max(area.Left+45,Math.Min(area.Right-45,center+side*145*scale));foodActive=true;paused=false;pendingClicks=0;idleTime=0;hopHeight=0;speed=0;
+        Change(Mood.Walk);direction=foodX>center?1:-1;targetSpeed=112;Say("우라!");
     }
     void UpdateDetails(double dt,System.Drawing.Point cursor,int mx,int my){
         if(mood==Mood.Sleep){sleepInkPoll-=dt;if(sleepInkPoll<=0){UpdateSleepInk();sleepInkPoll=.6;}}else sleepInkPoll=0;
@@ -56,7 +56,7 @@ partial class Usagi {
         double dx=cursor.X-(x+Width/2),localY=cursor.Y-y;
         bool near=Math.Abs(dx)<125*scale&&localY>petTop-30*scale&&localY<Height;
         gazeTilt+=(Math.Max(-7,Math.Min(7,dx/13))-gazeTilt)*(1-Math.Exp(-dt/.18));
-        if(scatterActive||pointerDown||dragging||paused||menu.Visible||carrotActive||mood==Mood.Hop||mood==Mood.Fall||mood==Mood.Sleep||mood==Mood.Drowsy||mood==Mood.Trip||mood==Mood.Recover)return;
+        if(scatterActive||pointerDown||dragging||paused||menu.Visible||foodActive||mood==Mood.Hop||mood==Mood.Fall||mood==Mood.Sleep||mood==Mood.Drowsy||mood==Mood.Trip||mood==Mood.Recover)return;
         double travel=Math.Sqrt(mx*mx+my*my);
         bool head=Math.Abs(dx)<40*scale&&localY>petTop+30*scale&&localY<Height-43*scale;
         if(head&&travel>.2&&travel<Math.Max(4,dt*1100)&&strokeCooldown<=0){strokeTime+=dt;if(strokeTime>.5){strokeTime=0;strokeCooldown=4;speed=0;Change(Mood.Nuzzle);EmitHearts(false);Say("후웅~");}}
@@ -68,9 +68,9 @@ partial class Usagi {
     }
     bool UpdateSpecial(double dt){
         if(UpdateScatter(dt))return true;
-        if(carrotActive&&mood!=Mood.Eat){idleTime=0;double distance=carrotX-(x+Width/2);direction=distance<0?-1:1;targetSpeed=38+74*Math.Min(1,Math.Abs(distance)/(90*scale));decisionTime=100;autoHopIn=100;
+        if(foodActive&&mood!=Mood.Eat){idleTime=0;double distance=foodX-(x+Width/2);direction=distance<0?-1:1;targetSpeed=38+74*Math.Min(1,Math.Abs(distance)/(90*scale));decisionTime=100;autoHopIn=100;
             if(Math.Abs(distance)<19*scale){speed=0;moving=false;Change(Mood.Eat);Say("푸루루루~");}}
-        if(mood==Mood.Eat){idleTime=0;moving=false;speed=0;if(stateTime>=5.3){carrotActive=false;EmitHearts(false);Say("야하!");Change(Mood.Look);}return true;}
+        if(mood==Mood.Eat){idleTime=0;moving=false;speed=0;if(stateTime>=5.3){foodActive=false;EmitHearts(false);Say("야하!");Change(Mood.Look);}return true;}
         if(mood==Mood.Nuzzle){idleTime=0;moving=false;speed=0;if(stateTime>1.8){Change(Mood.Look);decisionTime=2;}return true;}
         if(mood==Mood.Trip){moving=false;speed=0;if(stateTime>.65){Change(Mood.Recover);Say("…하아?");}return true;}
         if(mood==Mood.Recover){moving=false;if(stateTime>1.1){Change(Mood.Walk);targetSpeed=50;decisionTime=2;}return true;}
@@ -82,12 +82,16 @@ partial class Usagi {
     }
     void DrawDetails(Graphics g){
         foreach(var track in tracks){float alpha=(float)(1-track.Age/1.1);using(var ink=new SolidBrush(Color.FromArgb((int)(65*alpha),116,83,57))){float px=(float)(track.X-x),py=(float)(track.Y-y)-track.Side*2*track.Scale;g.FillEllipse(ink,px-3*track.Scale,py-2*track.Scale,6*track.Scale,2.5f*track.Scale);}}
-        if(carrotActive&&mood!=Mood.Eat)DrawCarrot(g,(float)(carrotX-x),Height-17,scale,1);
+        if(foodActive&&mood!=Mood.Eat)DrawPizzaBun(g,(float)(foodX-x),Height-17,scale,1);
 
     }
     static readonly System.Collections.Generic.List<Usagi> livePets=new System.Collections.Generic.List<Usagi>();
     bool isClone,scatterActive;int clonesPending,cloneSequence;double cloneDelay,scatterVX,scatterVY,scatterTime;
     static readonly float[] cloneSizes={.63f,1.12f,.82f,1.32f};
+    void RefreshCloneMenu(){bool any=false;foreach(var pet in livePets)if(pet.isClone&&!pet.IsDisposed){any=true;break;}
+        if(any&&!menu.Items.Contains(cleanupMenu)){cleanupMenu.AutoSize=false;cleanupMenu.Size=new Size(220,33);menu.Items.Insert(6,cleanupMenu);}
+        else if(!any&&menu.Items.Contains(cleanupMenu))menu.Items.Remove(cleanupMenu);
+    }
     void DuplicatePets(){int available=Math.Max(0,16-livePets.Count-clonesPending);clonesPending+=Math.Min(4,available);cloneSequence=0;cloneDelay=0;Say("야하아!!");}
     void ClearClones(){foreach(var pet in livePets.ToArray()){pet.clonesPending=0;if(pet.isClone&&!pet.IsDisposed)pet.Close();}clonesPending=0;}
     void UpdateCloneQueue(double dt){if(clonesPending<=0||IsDisposed)return;cloneDelay-=dt;if(cloneDelay>0)return;
@@ -126,18 +130,18 @@ partial class Usagi {
         }
     }
     // Four deliberate bites, with a brief approach, chew, and swallow for each one.
-    static int CarrotBites(double time){int bites=0;foreach(double bite in new[]{.95,1.8,2.65,3.5})if(time>=bite)bites++;return bites;}
+    static int FoodBites(double time){int bites=0;foreach(double bite in new[]{.95,1.8,2.65,3.5})if(time>=bite)bites++;return bites;}
     static double ChewPulse(double time){if(time<.7||time>4.6)return 0;double phase=(time-.7)% .85;return Math.Pow(Math.Max(0,Math.Sin(phase/.85*Math.PI*4)),2);}
     void DrawEating(Graphics g,float bottom){
-        double time=stateTime;float chew=(float)ChewPulse(time);int bites=CarrotBites(time);
+        double time=stateTime;float chew=(float)ChewPulse(time);int bites=FoodBites(time);
         float mouthX=Width/2+2*scale,mouthY=bottom-40*scale;
-        // The carrot follows the same body transform, so it never slides off the mouth.
+        // The bun follows the same body transform, so it never slides off the mouth.
         float lift=(float)Math.Max(0,Math.Min(1,time/.65));lift=lift*lift*(3-2*lift);
-        float cx=(float)(carrotX-x)+(mouthX-(float)(carrotX-x))*lift;
+        float cx=(float)(foodX-x)+(mouthX-(float)(foodX-x))*lift;
         float cy=Height-17+(mouthY-(Height-17))*lift;
-        float rotation=-25+180*lift;
+        float rotation=-8*lift;
         if(time<4.25){float approach=time<.7?0:(float)Math.Sin(Math.Min(1,((time-.7)%.85)/.2)*Math.PI)*1.5f;
-            DrawCarrot(g,cx+approach*scale,cy+chew*.7f*scale,.9f*scale,1-bites*.225f,rotation);
+            DrawPizzaBun(g,cx+8*scale*lift+approach*scale,cy+10*scale*lift+chew*.7f*scale,.9f*scale,1-bites*.225f,rotation);
             if(lift>.8){using(var hand=new SolidBrush(Color.FromArgb(255,242,207)))using(var outline=new Pen(Color.FromArgb(108,75,48),1.15f*scale)){
                 g.FillEllipse(hand,mouthX+3*scale,mouthY+9*scale,9*scale,7*scale);g.DrawArc(outline,mouthX+3*scale,mouthY+9*scale,9*scale,7*scale,0,180);
                 g.FillEllipse(hand,mouthX-8*scale,mouthY+8*scale,8*scale,6*scale);g.DrawArc(outline,mouthX-8*scale,mouthY+8*scale,8*scale,6*scale,30,150);
@@ -147,19 +151,20 @@ partial class Usagi {
             using(var ink=new Pen(Color.FromArgb(113,77,48),1.25f*scale)){g.DrawArc(ink,mouthX-3*scale,mouthY-2*scale,6*scale,(3+chew*2)*scale,0,180);}}
         foreach(double bite in new[]{.95,1.8,2.65,3.5}){double age=time-bite;if(age<0||age>.42)continue;
             for(int i=0;i<3;i++){float px=mouthX+(float)((i-1)*18*age)*scale,py=mouthY+(float)(-22*age+90*age*age)*scale;var saved=g.Save();g.TranslateTransform(px,py);g.RotateTransform((float)(age*220+i*35));using(var crumb=new SolidBrush(Color.FromArgb((int)(220*(1-age/.42)),239,150,58)))g.FillRectangle(crumb,-1.2f*scale,-.8f*scale,2.4f*scale,1.6f*scale);g.Restore(saved);}}
-        if(time>=4.25&&time<4.95){float u=(float)((time-4.25)/.7);var saved=g.Save();g.TranslateTransform(mouthX+19*scale+u*12*scale,bottom-19*scale+u*u*7*scale);g.RotateTransform(20+u*50);using(var leaf=new Pen(Color.FromArgb((int)(210*(1-u)),88,143,70),2*scale)){g.DrawLine(leaf,0,0,-3*scale,-7*scale);g.DrawLine(leaf,0,0,3*scale,-6*scale);}g.Restore(saved);}
+        if(time>=4.25&&time<4.65){using(var crumb=new SolidBrush(Color.FromArgb((int)(160*(1-(time-4.25)/.4)),235,191,110)))g.FillEllipse(crumb,mouthX+4*scale,mouthY+8*scale,2*scale,2*scale);}
     }
-    static void DrawCarrot(Graphics g,float cx,float cy,float size,float remaining){DrawCarrot(g,cx,cy,size,remaining,-25);}
-    static void DrawCarrot(Graphics g,float cx,float cy,float size,float remaining,float rotation){if(remaining<=0)return;var saved=g.Save();g.TranslateTransform(cx,cy);g.ScaleTransform(size,size);g.RotateTransform(rotation);
-        float cut=5-21*(1-remaining),edge=7*(5-cut)/21;
-        using(var carrot=new GraphicsPath()){
-            carrot.AddBezier(-7,-16,-5,-22,6,-22,7,-16);
-            if(remaining>.99){carrot.AddLine(7,-16,0,5);carrot.AddLine(0,5,-7,-16);}
-            else{carrot.AddLine(7,-16,edge,cut);carrot.AddBezier(edge,cut,edge*.7f,cut-2,edge*.3f,cut-2,0,cut);carrot.AddBezier(0,cut,-edge*.3f,cut-2,-edge*.7f,cut-2,-edge,cut);carrot.AddLine(-edge,cut,-7,-16);}
-            carrot.CloseFigure();using(var orange=new SolidBrush(Color.FromArgb(245,153,61)))g.FillPath(orange,carrot);using(var outline=new Pen(Color.FromArgb(116,74,35),1.25f))g.DrawPath(outline,carrot);
-            var clipped=g.Save();g.SetClip(carrot,CombineMode.Intersect);using(var highlight=new Pen(Color.FromArgb(255,195,103),1.5f))g.DrawLine(highlight,-4,-16,-1,1);using(var ridge=new Pen(Color.FromArgb(204,115,43),1)){g.DrawLine(ridge,2,-13,6,-13);g.DrawLine(ridge,-5,-8,-1,-8);g.DrawLine(ridge,1,-3,4,-3);}g.Restore(clipped);
-        }
-        using(var leaf=new Pen(Color.FromArgb(83,146,70),2.5f)){leaf.StartCap=leaf.EndCap=LineCap.Round;g.DrawBezier(leaf,0,-20,-5,-24,-7,-25,-6,-29);g.DrawLine(leaf,0,-20,1,-31);g.DrawBezier(leaf,0,-20,6,-22,9,-24,7,-27);}
-        g.Restore(saved);
+    static void DrawPizzaBun(Graphics g,float cx,float cy,float size,float remaining){DrawPizzaBun(g,cx,cy,size,remaining,0);}
+    static void DrawPizzaBun(Graphics g,float cx,float cy,float size,float remaining,float rotation){if(remaining<=0)return;var saved=g.Save();g.TranslateTransform(cx,cy);g.ScaleTransform(size,size);g.RotateTransform(rotation);
+        using(var bun=new GraphicsPath()){
+            bun.AddBezier(-12,0,-15,-9,-9,-19,0,-19);bun.AddBezier(0,-19,9,-19,15,-9,12,0);bun.AddBezier(12,0,8,6,-8,6,-12,0);bun.CloseFigure();
+            float cut=13-26*(1-remaining);using(var region=new Region(bun)){
+                if(remaining<.99){region.Intersect(new RectangleF(-15,-22,cut+15,30));using(var bite=new GraphicsPath()){bite.AddEllipse(cut-2,-15,5,7);bite.AddEllipse(cut-1,-7,5,7);region.Exclude(bite);}}
+                g.SetClip(region,CombineMode.Intersect);
+                using(var bread=new LinearGradientBrush(new PointF(-8,-18),new PointF(8,5),Color.FromArgb(255,240,189),Color.FromArgb(234,188,106)))g.FillPath(bread,bun);
+                using(var outline=new Pen(Color.FromArgb(128,88,45),1.3f))g.DrawPath(outline,bun);
+                using(var pleat=new Pen(Color.FromArgb(201,156,86),1.1f)){g.DrawBezier(pleat,-7,-13,-4,-12,-3,-16,0,-17);g.DrawBezier(pleat,7,-13,4,-12,3,-16,0,-17);g.DrawLine(pleat,0,-17,0,-12);}
+                if(remaining<.99){using(var filling=new SolidBrush(Color.FromArgb(238,148,50)))g.FillEllipse(filling,cut-5,-13,7,12);using(var cheese=new Pen(Color.FromArgb(255,232,144),1.5f))g.DrawBezier(cheese,cut-3,-10,cut-6,-6,cut-1,-6,cut-3,-3);using(var tomato=new SolidBrush(Color.FromArgb(197,75,48))){g.FillEllipse(tomato,cut-4,-10,2.5f,2.5f);g.FillEllipse(tomato,cut-3,-4,2,2);}}
+            }
+        }g.Restore(saved);
     }
 }
