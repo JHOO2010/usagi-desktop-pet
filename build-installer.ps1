@@ -1,4 +1,4 @@
-﻿param([ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version = '1.3.3')
+﻿param([ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version = '1.3.4')
 $ErrorActionPreference = 'Stop'
 & "$PSScriptRoot\build.ps1" -Version $Version
 $candidates = @((Join-Path $PSScriptRoot 'packaging\inno\ISCC.exe'), 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe', 'C:\Program Files\Inno Setup 6\ISCC.exe')

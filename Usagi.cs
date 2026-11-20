@@ -97,7 +97,7 @@ partial class Usagi : Form {
         }else{sprite=shared.sprite;Array.Copy(shared.walk,walk,4);Array.Copy(shared.leftWalk,leftWalk,4);Array.Copy(shared.poses,poses,4);foreach(var pair in shared.headWidths)headWidths[pair.Key]=pair.Value;}
         var area=Screen.PrimaryScreen.WorkingArea;x=area.Right-Width/2-110;y=area.Bottom-Height+8;lastCursor=Cursor.Position;nextSpeechTime=7+rng.NextDouble()*3;LoadPreferences();
         menu=new BubbleMenu{Font=speechFont};Func<string,ToolStripItem> add=text=>{var item=new BubbleMenuItem(text);menu.Items.Add(item);return item;};var pause=add("잠깐 쉬기");pause.Click+=(s,e)=>{paused=!paused;speed=0;moving=false;pause.Text=paused?"다시 산책하기":"잠깐 쉬기";};
-        add("폴짝!").Click+=(s,e)=>StartHop();add("쓰다듬기 ♡").Click+=(s,e)=>Pet();add("한마디 해줘!").Click+=(s,e)=>Speak();add("피자만두 주기").Click+=(s,e)=>OfferFood();add("우사기 복제하기").Click+=(s,e)=>DuplicatePets();cleanupMenu=new BubbleMenuItem("우사기 정리");cleanupMenu.Click+=(s,e)=>ClearClones();
+        add("폴짝!").Click+=(s,e)=>StartHop();add("쓰다듬기 ♥").Click+=(s,e)=>Pet();add("한마디 해줘!").Click+=(s,e)=>Speak();add("피자만두 주기").Click+=(s,e)=>OfferFood();add("우사기 복제하기").Click+=(s,e)=>DuplicatePets();cleanupMenu=new BubbleMenuItem("우사기 정리");cleanupMenu.Click+=(s,e)=>ClearClones();
         add("이 화면에서 산책하기").Click+=(s,e)=>{var a=Screen.FromPoint(Cursor.Position).WorkingArea;x=a.Left+a.Width/2-Width/2;y=a.Bottom-Height+8;Wake();SavePreferences();};
         menu.Items.Add(new SizeChoiceItem(()=>scale,v=>{scale=v;SavePreferences();}));
         var soundMenu=add("효과음: 이어폰에서만");soundMenu.Click+=(s,e)=>{sounds.Enabled=!sounds.Enabled;soundMenu.Text=sounds.Enabled?"효과음: 이어폰에서만":"효과음: 끔";sounds.Tick(1);SavePreferences();};
