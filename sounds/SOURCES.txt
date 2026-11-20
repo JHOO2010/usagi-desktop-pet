@@ -1,0 +1,29 @@
+우사기 음성 소스 / 2026-11-20
+
+공개 사운드보드에 Chiikawa Usagi로 표시된 사용자 업로드 클립입니다.
+공식 배포 음원으로 확인된 것은 아닙니다. 음성 합성은 하지 않았습니다.
+
+ura.wav / 점프 / 우라
+https://www.myinstants.com/en/instant/wula-70712/
+https://www.myinstants.com/media/sounds/wula.mp3
+
+purya.wav / 하트 / 푸루야
+https://www.myinstants.com/en/instant/bryy-79320/
+https://www.myinstants.com/media/sounds/bryy.mp3
+
+yaha.wav / 하트 폭발 / 야하
+https://www.myinstants.com/en/instant/usagi-yahaaaaaa-49847/
+https://www.myinstants.com/media/sounds/usagi-yahaaaaaa.mp3
+
+가공: 앞뒤 무음 정리, 저역/고역 정리, 음량 정규화, 짧은 페이드, PCM 16bit mono 44100Hz WAV.
+원본 MP3는 audio-source 폴더에 보관했습니다. 재생 시에는 sounds 폴더의 WAV만 사용합니다.
+
+sleep.wav / 수면 / 별도의 카툰 코골이 효과음 (우사기 원작 음성이 아닙니다)
+https://www.myinstants.com/en/instant/snore-mimimimimimi-76562/
+https://www.myinstants.com/media/sounds/snore-mimimimimimi.mp3
+짧은 구간을 낮은 음량으로 사용하며 수면 중 9~17초 간격으로 재생합니다.
+
+walk-ura.wav / walk-purya.wav
+위의 우라, 푸루야 클립을 낮은 음량으로 사용합니다. 걷는 중 간헐적으로 재생하며 다른 음성을 끊지 않습니다.
+
+Adobe Enhance Speech 잡음 제거 작업은 제출되었으며 완료 결과는 아직 반영하지 않았습니다.

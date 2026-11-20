@@ -1,0 +1,15 @@
+*.exe
+output/
+packaging/inno/
+audio-tools/
+audio-source/
+data/
+*.log
+*-preview.png
+preview.png
+scale-preview.png
+story-error.txt
+*.tmp
+
+/StoryRecorder.cs
+/사용법.txt

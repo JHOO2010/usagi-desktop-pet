@@ -1,0 +1,45 @@
+# 우사기 산책 펫
+
+Windows 작업표시줄 위를 산책하는 비공식 우사기 데스크톱 펫입니다.
+
+## 설치
+
+[Releases](https://github.com/JHOO2010/usagi-desktop-pet/releases)에서 최신 `UsagiPet-Setup-버전.exe`를 내려받아 설치하세요. Windows 10/11, .NET Framework 4.x 환경에서 실행합니다. 관리자 권한 없이 사용자 계정에 설치되며 시작 메뉴 바로가기를 만듭니다.
+
+## 조작
+
+- 한 번 클릭: 폴짝 / 두 번: 하트 / 세 번 이상: 하트 폭발
+- 드래그: 다른 위치로 옮기기
+- 머리 위에서 마우스를 부드럽게 움직이기: 눈을 감고 좋아하기
+- 가까이에서 마우스 흔들기: 쳐다보기와 고개 갸웃
+- 우클릭 → 당근 주기: 달려가 먹기
+- 우클릭: 쉬기, 점프, 쓰다듬기, 대사, 화면 이동, 크기, 효과음, 종료
+- 10초 동안 마우스를 움직이지 않으면 졸기 시작하며 움직이면 깨어납니다.
+
+걷기 보폭, 가끔 넘어졌다 일어나기, 사라지는 발자국, 밤의 느린 산책, 아침 첫 인사를 포함합니다. 크기·소리·마지막 화면과 위치는 `%LOCALAPPDATA%\UsagiPet\settings.txt`에 저장합니다. 자동 시작은 등록하지 않습니다.
+
+효과음은 기본 출력이 이어폰/헤드셋일 때만 재생하며 원본 대비 50% 음량입니다. 인터넷·AI 연결은 필요하지 않습니다.
+
+## 빌드와 검증
+
+Windows PowerShell에서:
+
+```powershell
+.\build.ps1
+.\check.ps1
+.\build-installer.ps1 -Version 1.1.0
+```
+
+설치파일 빌드에는 [Inno Setup 6](https://jrsoftware.org/inno-setup/downloads)이 필요합니다. `ISCC.exe`를 PATH에 넣거나 일반 설치 경로 또는 `packaging/inno/`에 두세요.
+
+## 버전별 출시
+
+```powershell
+.\release.ps1 -Version 1.2.0 -NotesFile .\release-notes\v1.2.0.md
+```
+
+변경 내용을 커밋·푸시한 깨끗한 main 브랜치에서 실행합니다. 빌드와 검증 후 버전 태그, 설치파일, SHA-256 체크섬, 변경 내역을 GitHub Releases에 업로드합니다. 같은 버전을 덮어쓰지 않습니다. GitHub CLI 로그인과 `origin` 연결이 필요합니다.
+
+## 권리와 출처
+
+비공식 팬 프로젝트이며 원작자 또는 공식 서비스와 관계없습니다. 캐릭터와 음성의 권리는 각 권리자에게 있습니다. 이미지와 음성, 제공된 온글잎 꾹지체를 포함한 제3자 자료에 오픈소스 라이선스를 부여하지 않습니다. 사용·재배포에는 각 권리자의 조건이 적용됩니다. 음성 출처는 [sounds/SOURCES.txt](sounds/SOURCES.txt)를 참조하세요.
