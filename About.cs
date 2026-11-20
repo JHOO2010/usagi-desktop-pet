@@ -12,7 +12,7 @@ class UpdateStatusItem : ToolStripItem {
     public void Arrange(Rectangle bounds){SetBounds(bounds);}
     protected override void OnPaint(PaintEventArgs e){var g=e.Graphics;g.SmoothingMode=SmoothingMode.AntiAlias;
         using(var font=new Font(Font.FontFamily,12))using(var ink=new SolidBrush(UpdateEnabled?Color.FromArgb(89,57,34):Color.Gray))using(var format=new StringFormat{LineAlignment=StringAlignment.Center,Trimming=StringTrimming.EllipsisCharacter,FormatFlags=StringFormatFlags.NoWrap})g.DrawString(Text,font,ink,new RectangleF(7,0,Width-80,Height),format);
-        var r=InfoBounds;using(var fill=new SolidBrush(infoFocus?Color.FromArgb(255,224,150):Color.FromArgb(255,239,200)))g.FillRectangle(fill,r);
+        var r=InfoBounds;using(var fill=new SolidBrush(infoFocus?Color.FromArgb(246,222,174):Color.FromArgb(248,243,232)))g.FillRectangle(fill,r);
         using(var font=new Font(Font.FontFamily,12))using(var ink=new SolidBrush(Color.FromArgb(89,57,34)))using(var format=new StringFormat{Alignment=StringAlignment.Center,LineAlignment=StringAlignment.Center})g.DrawString("정보 보기",font,ink,r,format);
     }
     protected override void OnMouseMove(MouseEventArgs e){base.OnMouseMove(e);infoFocus=InfoBounds.Contains(e.Location);Invalidate();}
