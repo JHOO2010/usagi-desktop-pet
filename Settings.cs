@@ -6,7 +6,8 @@ static class SettingArt {
     internal static readonly Color Cream=Color.FromArgb(255,253,246),Ink=Color.FromArgb(99,72,51),Muted=Color.FromArgb(151,131,110),Line=Color.FromArgb(231,220,201),Accent=Color.FromArgb(246,222,174);
     internal static GraphicsPath Round(Rectangle r,int radius){var p=new GraphicsPath();int d=radius*2;p.AddArc(r.X,r.Y,d,d,180,90);p.AddArc(r.Right-d,r.Y,d,d,270,90);p.AddArc(r.Right-d,r.Bottom-d,d,d,0,90);p.AddArc(r.X,r.Bottom-d,d,d,90,90);p.CloseFigure();return p;}
     internal static void Icon(Graphics g,string name,int x,int y){var state=g.Save();g.TranslateTransform(x,y);g.SmoothingMode=SmoothingMode.AntiAlias;using(var p=new Pen(Ink,1.4f)){p.StartCap=p.EndCap=LineCap.Round;p.LineJoin=LineJoin.Round;
-        if(name=="close"){g.DrawLine(p,5,5,15,15);g.DrawLine(p,15,5,5,15);}
+        if(name=="back"){g.DrawLine(p,4,10,17,10);g.DrawLine(p,4,10,10,4);g.DrawLine(p,4,10,10,16);}
+        else if(name=="close"){g.DrawLine(p,5,5,15,15);g.DrawLine(p,15,5,5,15);}
         else if(name=="size"){g.DrawRectangle(p,3,9,8,8);g.DrawLine(p,6,4,17,4);g.DrawLine(p,17,4,17,14);g.DrawLine(p,13,8,17,4);}
         else if(name=="sound"){g.DrawLines(p,new[]{new Point(3,8),new Point(7,8),new Point(12,4),new Point(12,17),new Point(7,13),new Point(3,13),new Point(3,8)});g.DrawArc(p,10,5,8,11,-60,120);}
         else if(name=="startup"){g.DrawArc(p,4,4,13,13,-50,280);g.DrawLine(p,10,1,10,9);}
@@ -49,7 +50,7 @@ partial class Usagi {
         form.Paint+=(s,e)=>{var g=e.Graphics;g.SmoothingMode=System.Drawing.Drawing2D.SmoothingMode.AntiAlias;using(var path=BubbleMenu.Outline(form.Width,form.Height,tail))using(var pen=new Pen(Color.FromArgb(164,135,104),1.4f))g.DrawPath(pen,path);SettingArt.Icon(g,"settings",27,26);using(var line=new Pen(SettingArt.Line))g.DrawLine(line,26,310,394,310);};
         var titleFont=new Font(menuFont.FontFamily,15);var smallFont=new Font(menuFont.FontFamily,9);form.Disposed+=(s,e)=>{titleFont.Dispose();smallFont.Dispose();};
         Action<string,int,int,int,Font,Color> text=(value,left,top,width,font,color)=>form.Controls.Add(new Label{Text=value,Location=new Point(left,top),Size=new Size(width,24),Font=font,ForeColor=color,UseCompatibleTextRendering=true});
-        text("우사기 설정",56,23,280,titleFont,SettingArt.Ink);text("바꾸면 바로 적용돼요",27,56,300,smallFont,SettingArt.Muted);
+        text("우사기 설정",56,23,280,titleFont,SettingArt.Ink);
         Action<string,string,int> label=(icon,value,top)=>{var row=new Label{Text=value,Location=new Point(26,top),Size=new Size(145,30),Padding=new Padding(30,4,0,0),UseCompatibleTextRendering=true};row.Paint+=(s,e)=>SettingArt.Icon(e.Graphics,icon,1,5);form.Controls.Add(row);};
         Func<string,int,int,int,SettingButton> button=(value,left,top,width)=>{var control=new SettingButton{Text=value,Location=new Point(left,top),Size=new Size(width,32)};form.Controls.Add(control);return control;};
         label("size","크기",92);var sizes=new[]{.75f,1f,1.4f};var names=new[]{"작게","보통","크게"};var sizeButtons=new SettingButton[3];Action refreshSizes=()=>{for(int i=0;i<3;i++){sizeButtons[i].Chosen=Math.Abs(scale-sizes[i])<.01;sizeButtons[i].Invalidate();}};
@@ -73,7 +74,7 @@ partial class Usagi {
         var hidden=new System.Collections.Generic.List<Control>();
         foreach(Control control in form.Controls)if(control.Top>=78&&control.Visible){hidden.Add(control);control.Visible=false;}
         var page=new Panel{Name="InfoPage",Location=new Point(26,80),Size=new Size(368,form.Height-112),BackColor=SettingArt.Cream,AutoScroll=true};form.Controls.Add(page);page.BringToFront();
-        var back=new SettingButton{Text="설정으로 돌아가기",Location=new Point(0,0),Size=new Size(158,30)};page.Controls.Add(back);
+        var back=new SettingButton{Text="뒤로가기",IconName="back",IconOnly=true,AccessibleName="뒤로가기",Location=new Point(0,0),Size=new Size(32,32)};page.Controls.Add(back);
         back.Click+=(s,e)=>{form.Controls.Remove(page);page.Dispose();foreach(var control in hidden)control.Visible=true;foreach(var control in hidden)if(control is LinkLabel){control.Focus();break;}};
         page.Controls.Add(new Label{Text="우사기 산책 펫",Location=new Point(0,46),Size=new Size(360,26),UseCompatibleTextRendering=true});
         page.Controls.Add(new Label{Text="v"+PetUpdates.CurrentVersion.ToString(3)+" · 만든 사람 JHOO",Location=new Point(0,74),Size=new Size(360,24),ForeColor=SettingArt.Muted,UseCompatibleTextRendering=true});
