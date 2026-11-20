@@ -141,14 +141,11 @@ partial class Usagi {
         float cy=Height-17+(mouthY-(Height-17))*lift;
         float rotation=-8*lift;
         if(time<4.25){float approach=time<.7?0:(float)Math.Sin(Math.Min(1,((time-.7)%.85)/.2)*Math.PI)*1.5f;
-            DrawPizzaBun(g,cx+8*scale*lift+approach*scale,cy+10*scale*lift+chew*.7f*scale,.9f*scale,1-bites*.225f,rotation);
-            if(lift>.8){using(var hand=new SolidBrush(Color.FromArgb(255,242,207)))using(var outline=new Pen(Color.FromArgb(108,75,48),1.15f*scale)){
-                g.FillEllipse(hand,mouthX+3*scale,mouthY+9*scale,9*scale,7*scale);g.DrawArc(outline,mouthX+3*scale,mouthY+9*scale,9*scale,7*scale,0,180);
-                g.FillEllipse(hand,mouthX-8*scale,mouthY+8*scale,8*scale,6*scale);g.DrawArc(outline,mouthX-8*scale,mouthY+8*scale,8*scale,6*scale,30,150);
-            }}
+            DrawPizzaBun(g,cx-2*scale*lift+approach*.3f*scale,cy+18*scale*lift-chew*1.8f*scale,.9f*scale,1-bites*.225f,rotation);
+
         }
         if(time>.7&&time<4.6){using(var cheek=new SolidBrush(Color.FromArgb((int)(28+chew*38),245,145,148))){g.FillEllipse(cheek,Width/2-24*scale,mouthY-5*scale,(8+chew*2)*scale,5*scale);g.FillEllipse(cheek,Width/2+15*scale,mouthY-5*scale,(8+chew*2)*scale,5*scale);}
-            using(var ink=new Pen(Color.FromArgb(113,77,48),1.25f*scale)){g.DrawArc(ink,mouthX-3*scale,mouthY-2*scale,6*scale,(3+chew*2)*scale,0,180);}}
+        }
         foreach(double bite in new[]{.95,1.8,2.65,3.5}){double age=time-bite;if(age<0||age>.42)continue;
             for(int i=0;i<3;i++){float px=mouthX+(float)((i-1)*18*age)*scale,py=mouthY+(float)(-22*age+90*age*age)*scale;var saved=g.Save();g.TranslateTransform(px,py);g.RotateTransform((float)(age*220+i*35));using(var crumb=new SolidBrush(Color.FromArgb((int)(220*(1-age/.42)),239,150,58)))g.FillRectangle(crumb,-1.2f*scale,-.8f*scale,2.4f*scale,1.6f*scale);g.Restore(saved);}}
         if(time>=4.25&&time<4.65){using(var crumb=new SolidBrush(Color.FromArgb((int)(160*(1-(time-4.25)/.4)),235,191,110)))g.FillEllipse(crumb,mouthX+4*scale,mouthY+8*scale,2*scale,2*scale);}
