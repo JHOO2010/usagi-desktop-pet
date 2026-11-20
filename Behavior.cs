@@ -132,17 +132,18 @@ partial class Usagi {
     // Four deliberate bites, with a brief approach, chew, and swallow for each one.
     static int FoodBites(double time){int bites=0;foreach(double bite in new[]{.95,1.8,2.65,3.5})if(time>=bite)bites++;return bites;}
     static double ChewPulse(double time){if(time<.7||time>4.6)return 0;double phase=(time-.7)% .85;return Math.Pow(Math.Max(0,Math.Sin(phase/.85*Math.PI*4)),2);}
+    static float FoodRemaining(double time){double eaten=0;foreach(double bite in new[]{.95,1.8,2.65,3.5}){double u=Math.Max(0,Math.Min(1,(time-bite)/.18));eaten+=.225*u*u*(3-2*u);}eaten+=.1*Math.Max(0,Math.Min(1,(time-3.9)/.25));return (float)Math.Max(0,1-eaten);}
     void DrawEating(Graphics g,float bottom){
         double time=stateTime;float chew=(float)ChewPulse(time);int bites=FoodBites(time);
         float mouthX=Width/2+2*scale,mouthY=bottom-40*scale;
         // The bun follows the same body transform, so it never slides off the mouth.
         float lift=(float)Math.Max(0,Math.Min(1,time/.65));lift=lift*lift*(3-2*lift);
         float cx=(float)(foodX-x)+(mouthX-(float)(foodX-x))*lift;
-        float cy=Height-17+(mouthY-(Height-17))*lift;
-        float rotation=-8*lift;
-        if(time<4.25){float approach=time<.7?0:(float)Math.Sin(Math.Min(1,((time-.7)%.85)/.2)*Math.PI)*1.5f;
-            DrawPizzaBun(g,cx-2*scale*lift+approach*.3f*scale,cy+18*scale*lift-chew*1.8f*scale,.9f*scale,1-bites*.225f,rotation);
-
+        if(time<4.15){float remaining=FoodRemaining(time),cut=-20+25*(1-remaining);
+            float heldY=mouthY-cut*.9f*scale;float baseY=(Height-17)+(heldY-(Height-17))*lift;
+            // The bitten upper edge stays at the lips; the rest advances into the mouth.
+            var foodLayer=g.Save();if(lift>.99)g.SetClip(new RectangleF(Width/2-40*scale,mouthY-.5f*scale,80*scale,Height-mouthY+20),CombineMode.Intersect);
+            DrawPizzaBun(g,cx-2*scale*lift,baseY-chew*.7f*scale,.9f*scale,remaining,0);g.Restore(foodLayer);
         }
         if(time>.7&&time<4.6){using(var cheek=new SolidBrush(Color.FromArgb((int)(28+chew*38),245,145,148))){g.FillEllipse(cheek,Width/2-24*scale,mouthY-5*scale,(8+chew*2)*scale,5*scale);g.FillEllipse(cheek,Width/2+15*scale,mouthY-5*scale,(8+chew*2)*scale,5*scale);}
         }
@@ -154,13 +155,13 @@ partial class Usagi {
     static void DrawPizzaBun(Graphics g,float cx,float cy,float size,float remaining,float rotation){if(remaining<=0)return;var saved=g.Save();g.TranslateTransform(cx,cy);g.ScaleTransform(size,size);g.RotateTransform(rotation);
         using(var bun=new GraphicsPath()){
             bun.AddBezier(-12,0,-15,-9,-9,-19,0,-19);bun.AddBezier(0,-19,9,-19,15,-9,12,0);bun.AddBezier(12,0,8,6,-8,6,-12,0);bun.CloseFigure();
-            float cut=13-26*(1-remaining);using(var region=new Region(bun)){
-                if(remaining<.99){region.Intersect(new RectangleF(-15,-22,cut+15,30));using(var bite=new GraphicsPath()){bite.AddEllipse(cut-2,-15,5,7);bite.AddEllipse(cut-1,-7,5,7);region.Exclude(bite);}}
+            float cut=-20+25*(1-remaining);using(var region=new Region(bun)){
+                if(remaining<.99){region.Intersect(new RectangleF(-15,cut,30,25-cut));using(var bite=new GraphicsPath()){bite.AddEllipse(-8,cut-2,8,4);bite.AddEllipse(0,cut-1,8,4);region.Exclude(bite);}}
                 g.SetClip(region,CombineMode.Intersect);
                 using(var bread=new LinearGradientBrush(new PointF(-8,-18),new PointF(8,5),Color.FromArgb(255,240,189),Color.FromArgb(234,188,106)))g.FillPath(bread,bun);
                 using(var outline=new Pen(Color.FromArgb(128,88,45),1.3f))g.DrawPath(outline,bun);
                 using(var pleat=new Pen(Color.FromArgb(201,156,86),1.1f)){g.DrawBezier(pleat,-7,-13,-4,-12,-3,-16,0,-17);g.DrawBezier(pleat,7,-13,4,-12,3,-16,0,-17);g.DrawLine(pleat,0,-17,0,-12);}
-                if(remaining<.99){using(var filling=new SolidBrush(Color.FromArgb(238,148,50)))g.FillEllipse(filling,cut-5,-13,7,12);using(var cheese=new Pen(Color.FromArgb(255,232,144),1.5f))g.DrawBezier(cheese,cut-3,-10,cut-6,-6,cut-1,-6,cut-3,-3);using(var tomato=new SolidBrush(Color.FromArgb(197,75,48))){g.FillEllipse(tomato,cut-4,-10,2.5f,2.5f);g.FillEllipse(tomato,cut-3,-4,2,2);}}
+                if(remaining<.99){using(var filling=new SolidBrush(Color.FromArgb(238,148,50)))g.FillEllipse(filling,-8,cut-1,16,4);using(var cheese=new Pen(Color.FromArgb(255,232,144),1.2f))g.DrawBezier(cheese,-6,cut+1,-2,cut+3,1,cut-1,6,cut+1);using(var tomato=new SolidBrush(Color.FromArgb(197,75,48))){g.FillEllipse(tomato,-4,cut+1,2.5f,1.5f);g.FillEllipse(tomato,3,cut,2,1.5f);}}
             }
         }g.Restore(saved);
     }
