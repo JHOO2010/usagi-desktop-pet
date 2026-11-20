@@ -63,7 +63,7 @@ partial class Usagi {
         else strokeTime=Math.Max(0,strokeTime-dt*.6);
         if(mood==Mood.Nuzzle)return;
         if(near&&travel>1){int sign=mx>0?1:mx<0?-1:0;if(sign!=0&&sign!=wiggleDirection){wiggleDirection=sign;if(t-lastWiggle<.65)wiggleTime+=.5;else wiggleTime=.5;lastWiggle=t;}
-            if(curiosityCooldown<=0){Settle(Mood.Look);curiosityCooldown=3;direction=dx<0?-1:1;if(wiggleTime>=1.5){Say("하아?");gazeTilt=dx<0?-12:12;wiggleTime=0;}}
+            if(curiosityCooldown<=0){Settle(Mood.Look);curiosityCooldown=3;direction=dx<0?-1:1;if(wiggleTime>=1.5){AutoSay("하아?");gazeTilt=dx<0?-12:12;wiggleTime=0;}}
         }
     }
     bool UpdateSpecial(double dt){
@@ -72,7 +72,7 @@ partial class Usagi {
             if(Math.Abs(distance)<19*scale){speed=0;moving=false;Change(Mood.Eat);Say("푸루루루~");}}
         if(mood==Mood.Eat){idleTime=0;moving=false;speed=0;if(stateTime>=5.3){foodActive=false;EmitHearts(false);Say("야하!");Change(Mood.Look);}return true;}
         if(mood==Mood.Nuzzle){idleTime=0;moving=false;speed=0;if(stateTime>1.8){Change(Mood.Look);decisionTime=2;}return true;}
-        if(mood==Mood.Trip){moving=false;speed=0;if(stateTime>.65){Change(Mood.Recover);Say("…하아?");}return true;}
+        if(mood==Mood.Trip){moving=false;speed=0;if(stateTime>.65){Change(Mood.Recover);AutoSay("…하아?");}return true;}
         if(mood==Mood.Recover){moving=false;if(stateTime>1.1){Change(Mood.Walk);targetSpeed=50;decisionTime=2;}return true;}
         return false;
     }
@@ -97,7 +97,7 @@ partial class Usagi {
     void UpdateCloneQueue(double dt){if(clonesPending<=0||IsDisposed)return;cloneDelay-=dt;if(cloneDelay>0)return;
         if(livePets.Count>=16){clonesPending=0;return;}cloneDelay=.11;clonesPending--;
         var pet=new Usagi(true,this);pet.scale=cloneSizes[cloneSequence%4];pet.sounds.Enabled=sounds.Enabled;
-        pet.x=x;pet.y=y;pet.idleTime=0;pet.speechTime=0;pet.nextSpeechTime=3+rng.NextDouble()*6;
+        pet.x=x;pet.y=y;pet.idleTime=0;pet.speechTime=0;pet.nextSpeechTime=7+rng.NextDouble()*3;
         int slot=cloneSequence++%4;pet.scatterVX=new[]{-225.0,140.0,-120.0,245.0}[slot];pet.scatterVY=-235-slot%2*45;pet.scatterActive=true;pet.scatterTime=0;pet.Change(Mood.Fall);
         pet.direction=pet.scatterVX>0?1:-1;pet.targetSpeed=44+rng.NextDouble()*45;pet.decisionTime=1+rng.NextDouble()*2;
         livePets.Add(pet);pet.Show();pet.Render();
