@@ -203,14 +203,13 @@ partial class Usagi : Form {
         float squash=landing>0?(float)Math.Sin(landing/.26*Math.PI)*.1f:0;
         if(!paused&&mood==Mood.Sleep){h+=(float)Math.Sin(t*2.2)*1.2f;}
         if(mood==Mood.Nuzzle){pose=poses[1];factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;angle=(float)Math.Sin(t*5)*2;}
-        if(mood==Mood.Eat){pose=poses[0];factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;bob=(float)Math.Sin(stateTime*18)*1.5f;bottom-=bob;angle=(float)Math.Sin(stateTime*9)*2;}
+        if(mood==Mood.Eat){pose=poses[0];factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;bob=(float)ChewPulse(stateTime)*.65f*scale;bottom-=bob;angle=stateTime<.65?(float)Math.Sin(stateTime/.65*Math.PI)*3:((float)ChewPulse(stateTime)-.5f)*.65f;}
         if(mood==Mood.Trip){pose=poses[3];factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;angle=direction*(float)(Math.Sin(Math.Min(1,stateTime/.5)*Math.PI/2)*68);bottom-=8*scale;}
         if(mood==Mood.Recover){pose=poses[0];factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;angle=(float)Math.Sin(stateTime*7)*8;}
         if(mood==Mood.Look)angle+=(float)gazeTilt;
         DrawDetails(g);DrawHearts(g);
-        var saved=g.Save();g.TranslateTransform(Width/2,bottom);g.RotateTransform(angle);g.ScaleTransform(1+squash,1-squash);g.DrawImage(pose,-width/2,-h,width,h);g.Restore(saved);
-        if(mood==Mood.Eat)DrawCarrot(g,Width/2+direction*19*scale,bottom-28*scale,.65f*scale,(float)(1-stateTime/3.2));
-        if(mood==Mood.Sleep){using(var font=new Font(petFonts.Families[0],13,FontStyle.Regular))using(var ink=new SolidBrush(Color.FromArgb(89,57,34)))g.DrawString("z Z",font,ink,Width/2+width/2-4,Height-h-20-(float)Math.Sin(t*1.5)*3);}
+        var saved=g.Save();g.TranslateTransform(Width/2,bottom);g.RotateTransform(angle);g.ScaleTransform(1+squash,1-squash);g.DrawImage(pose,-width/2,-h,width,h);if(mood==Mood.Eat){var eating=g.Save();g.TranslateTransform(-Width/2,-bottom);DrawEating(g,bottom);g.Restore(eating);}g.Restore(saved);
+        if(mood==Mood.Sleep)DrawSleepText(g,width,h);
         petTop=bottom-h;
         if(speechTime>0&&!menu.Visible)DrawSpeech(g,Math.Max(4,bottom-h-72*scale));
     }return frame;}

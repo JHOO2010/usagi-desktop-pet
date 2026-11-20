@@ -6,6 +6,8 @@ using System.IO;
 using System.Windows.Forms;
 
 partial class Usagi {
+    [System.Runtime.InteropServices.DllImport("gdi32.dll")]static extern uint GetPixel(IntPtr dc,int x,int y);
+    double sleepInkPoll;bool lightSleepInk;
     class Track {public double X,Y,Age;public float Scale;public int Side;}
     readonly System.Collections.Generic.List<Track> tracks=new System.Collections.Generic.List<Track>();
     double trackDistance,tripCooldown=95,strokeTime,strokeCooldown,gazeTilt,wiggleTime,lastWiggle,saveIn=10,carrotX;
@@ -46,6 +48,7 @@ partial class Usagi {
         Change(Mood.Walk);direction=carrotX>center?1:-1;targetSpeed=112;Say("우라!");
     }
     void UpdateDetails(double dt,System.Drawing.Point cursor,int mx,int my){
+        if(mood==Mood.Sleep){sleepInkPoll-=dt;if(sleepInkPoll<=0){UpdateSleepInk();sleepInkPoll=.6;}}else sleepInkPoll=0;
         saveIn-=dt;if(saveIn<=0){SavePreferences();saveIn=10;}
         tripCooldown-=dt;strokeCooldown=Math.Max(0,strokeCooldown-dt);
         for(int i=tracks.Count-1;i>=0;i--){tracks[i].Age+=dt;if(tracks[i].Age>1.1)tracks.RemoveAt(i);}
@@ -63,9 +66,9 @@ partial class Usagi {
         }
     }
     bool UpdateSpecial(double dt){
-        if(carrotActive&&mood!=Mood.Eat){idleTime=0;double distance=carrotX-(x+Width/2);direction=distance<0?-1:1;targetSpeed=112;decisionTime=100;autoHopIn=100;
+        if(carrotActive&&mood!=Mood.Eat){idleTime=0;double distance=carrotX-(x+Width/2);direction=distance<0?-1:1;targetSpeed=38+74*Math.Min(1,Math.Abs(distance)/(90*scale));decisionTime=100;autoHopIn=100;
             if(Math.Abs(distance)<19*scale){speed=0;moving=false;Change(Mood.Eat);Say("푸루루루~");}}
-        if(mood==Mood.Eat){idleTime=0;moving=false;speed=0;if(stateTime>=3.2){carrotActive=false;EmitHearts(false);Say("야하!");Change(Mood.Look);}return true;}
+        if(mood==Mood.Eat){idleTime=0;moving=false;speed=0;if(stateTime>=5.3){carrotActive=false;EmitHearts(false);Say("야하!");Change(Mood.Look);}return true;}
         if(mood==Mood.Nuzzle){idleTime=0;moving=false;speed=0;if(stateTime>1.8){Change(Mood.Look);decisionTime=2;}return true;}
         if(mood==Mood.Trip){moving=false;speed=0;if(stateTime>.65){Change(Mood.Recover);Say("…하아?");}return true;}
         if(mood==Mood.Recover){moving=false;if(stateTime>1.1){Change(Mood.Walk);targetSpeed=50;decisionTime=2;}return true;}
@@ -78,12 +81,61 @@ partial class Usagi {
     void DrawDetails(Graphics g){
         foreach(var track in tracks){float alpha=(float)(1-track.Age/1.1);using(var ink=new SolidBrush(Color.FromArgb((int)(65*alpha),116,83,57))){float px=(float)(track.X-x),py=(float)(track.Y-y)-track.Side*2*track.Scale;g.FillEllipse(ink,px-3*track.Scale,py-2*track.Scale,6*track.Scale,2.5f*track.Scale);}}
         if(carrotActive&&mood!=Mood.Eat)DrawCarrot(g,(float)(carrotX-x),Height-17,scale,1);
-        if(mood==Mood.Eat){using(var ink=new SolidBrush(Color.FromArgb(170,225,139,56)))for(int i=0;i<3;i++){float phase=(float)((stateTime*3+i*.3)%1);g.FillEllipse(ink,Width/2+(i-1)*15*scale*phase,Height-34*scale-phase*12*scale,2*scale,2*scale);}}
+
     }
-    static void DrawCarrot(Graphics g,float cx,float cy,float size,float remaining){if(remaining<=0)return;var saved=g.Save();g.TranslateTransform(cx,cy);g.ScaleTransform(size,size);g.RotateTransform(-25);
-        using(var carrot=new GraphicsPath()){carrot.AddBezier(-7,-16,-5,-22,6,-22,7,-16);carrot.AddLine(7,-16,0,5);carrot.CloseFigure();using(var orange=new SolidBrush(Color.FromArgb(245,153,61)))g.FillPath(orange,carrot);using(var outline=new Pen(Color.FromArgb(116,74,35),1.4f))g.DrawPath(outline,carrot);}
-        using(var leaf=new Pen(Color.FromArgb(83,146,70),3)){leaf.StartCap=leaf.EndCap=LineCap.Round;g.DrawLine(leaf,0,-20,-6,-29);g.DrawLine(leaf,0,-20,1,-31);g.DrawLine(leaf,0,-20,7,-27);}
-        if(remaining<.7){using(var cream=new SolidBrush(Color.FromArgb(255,253,241)))g.FillEllipse(cream,-5,1-10*(1-remaining),13,10);}
+    static double BackgroundLuminance(Color color){return (.2126*color.R+.7152*color.G+.0722*color.B)/255;}
+    static bool NeedsLightSleepInk(double luminance,bool previous){return previous?luminance<.6:luminance<.46;}
+    void UpdateSleepInk(){
+        float factor=68*scale/headWidths[poses[1]],w=poses[1].Width*factor,h=poses[1].Height*factor;
+        int sx=(int)(x+Width/2+w/2-4),sy=(int)(y+Height-h-20);double total=0;int count=0;var dc=GetDC(IntPtr.Zero);
+        try{foreach(var offset in new[]{new System.Drawing.Point(0,-12),new System.Drawing.Point(20,-12),new System.Drawing.Point(48,0),new System.Drawing.Point(48,15),new System.Drawing.Point(48,30)}){
+            var point=new System.Drawing.Point(sx+(int)(offset.X*scale),sy+(int)(offset.Y*scale));if(!SystemInformation.VirtualScreen.Contains(point))continue;
+            uint pixel=GetPixel(dc,point.X,point.Y);if(pixel==0xffffffff)continue;total+=BackgroundLuminance(Color.FromArgb((int)(pixel&255),(int)((pixel>>8)&255),(int)((pixel>>16)&255)));count++;
+        }}finally{ReleaseDC(IntPtr.Zero,dc);}if(count>0)lightSleepInk=NeedsLightSleepInk(total/count,lightSleepInk);
+    }
+    void DrawSleepText(Graphics g,float width,float height){
+        var point=new PointF(Width/2+width/2-4,Height-height-20-(float)Math.Sin(t*1.5)*3);
+        using(var path=new GraphicsPath())using(var format=new StringFormat()){
+            path.AddString("z Z",petFonts.Families[0],(int)FontStyle.Regular,13*g.DpiY/72,point,format);
+            using(var edge=new Pen(lightSleepInk?Color.FromArgb(155,73,51,36):Color.FromArgb(180,255,253,235),2)){edge.LineJoin=LineJoin.Round;g.DrawPath(edge,path);}
+            using(var ink=new SolidBrush(lightSleepInk?Color.FromArgb(255,251,226):Color.FromArgb(89,57,34)))g.FillPath(ink,path);
+        }
+    }
+    // Four deliberate bites, with a brief approach, chew, and swallow for each one.
+    static int CarrotBites(double time){int bites=0;foreach(double bite in new[]{.95,1.8,2.65,3.5})if(time>=bite)bites++;return bites;}
+    static double ChewPulse(double time){if(time<.7||time>4.6)return 0;double phase=(time-.7)% .85;return Math.Pow(Math.Max(0,Math.Sin(phase/.85*Math.PI*4)),2);}
+    void DrawEating(Graphics g,float bottom){
+        double time=stateTime;float chew=(float)ChewPulse(time);int bites=CarrotBites(time);
+        float mouthX=Width/2+2*scale,mouthY=bottom-40*scale;
+        // The carrot follows the same body transform, so it never slides off the mouth.
+        float lift=(float)Math.Max(0,Math.Min(1,time/.65));lift=lift*lift*(3-2*lift);
+        float cx=(float)(carrotX-x)+(mouthX-(float)(carrotX-x))*lift;
+        float cy=Height-17+(mouthY-(Height-17))*lift;
+        float rotation=-25+180*lift;
+        if(time<4.25){float approach=time<.7?0:(float)Math.Sin(Math.Min(1,((time-.7)%.85)/.2)*Math.PI)*1.5f;
+            DrawCarrot(g,cx+approach*scale,cy+chew*.7f*scale,.9f*scale,1-bites*.225f,rotation);
+            if(lift>.8){using(var hand=new SolidBrush(Color.FromArgb(255,242,207)))using(var outline=new Pen(Color.FromArgb(108,75,48),1.15f*scale)){
+                g.FillEllipse(hand,mouthX+3*scale,mouthY+9*scale,9*scale,7*scale);g.DrawArc(outline,mouthX+3*scale,mouthY+9*scale,9*scale,7*scale,0,180);
+                g.FillEllipse(hand,mouthX-8*scale,mouthY+8*scale,8*scale,6*scale);g.DrawArc(outline,mouthX-8*scale,mouthY+8*scale,8*scale,6*scale,30,150);
+            }}
+        }
+        if(time>.7&&time<4.6){using(var cheek=new SolidBrush(Color.FromArgb((int)(28+chew*38),245,145,148))){g.FillEllipse(cheek,Width/2-24*scale,mouthY-5*scale,(8+chew*2)*scale,5*scale);g.FillEllipse(cheek,Width/2+15*scale,mouthY-5*scale,(8+chew*2)*scale,5*scale);}
+            using(var ink=new Pen(Color.FromArgb(113,77,48),1.25f*scale)){g.DrawArc(ink,mouthX-3*scale,mouthY-2*scale,6*scale,(3+chew*2)*scale,0,180);}}
+        foreach(double bite in new[]{.95,1.8,2.65,3.5}){double age=time-bite;if(age<0||age>.42)continue;
+            for(int i=0;i<3;i++){float px=mouthX+(float)((i-1)*18*age)*scale,py=mouthY+(float)(-22*age+90*age*age)*scale;var saved=g.Save();g.TranslateTransform(px,py);g.RotateTransform((float)(age*220+i*35));using(var crumb=new SolidBrush(Color.FromArgb((int)(220*(1-age/.42)),239,150,58)))g.FillRectangle(crumb,-1.2f*scale,-.8f*scale,2.4f*scale,1.6f*scale);g.Restore(saved);}}
+        if(time>=4.25&&time<4.95){float u=(float)((time-4.25)/.7);var saved=g.Save();g.TranslateTransform(mouthX+19*scale+u*12*scale,bottom-19*scale+u*u*7*scale);g.RotateTransform(20+u*50);using(var leaf=new Pen(Color.FromArgb((int)(210*(1-u)),88,143,70),2*scale)){g.DrawLine(leaf,0,0,-3*scale,-7*scale);g.DrawLine(leaf,0,0,3*scale,-6*scale);}g.Restore(saved);}
+    }
+    static void DrawCarrot(Graphics g,float cx,float cy,float size,float remaining){DrawCarrot(g,cx,cy,size,remaining,-25);}
+    static void DrawCarrot(Graphics g,float cx,float cy,float size,float remaining,float rotation){if(remaining<=0)return;var saved=g.Save();g.TranslateTransform(cx,cy);g.ScaleTransform(size,size);g.RotateTransform(rotation);
+        float cut=5-21*(1-remaining),edge=7*(5-cut)/21;
+        using(var carrot=new GraphicsPath()){
+            carrot.AddBezier(-7,-16,-5,-22,6,-22,7,-16);
+            if(remaining>.99){carrot.AddLine(7,-16,0,5);carrot.AddLine(0,5,-7,-16);}
+            else{carrot.AddLine(7,-16,edge,cut);carrot.AddBezier(edge,cut,edge*.7f,cut-2,edge*.3f,cut-2,0,cut);carrot.AddBezier(0,cut,-edge*.3f,cut-2,-edge*.7f,cut-2,-edge,cut);carrot.AddLine(-edge,cut,-7,-16);}
+            carrot.CloseFigure();using(var orange=new SolidBrush(Color.FromArgb(245,153,61)))g.FillPath(orange,carrot);using(var outline=new Pen(Color.FromArgb(116,74,35),1.25f))g.DrawPath(outline,carrot);
+            var clipped=g.Save();g.SetClip(carrot,CombineMode.Intersect);using(var highlight=new Pen(Color.FromArgb(255,195,103),1.5f))g.DrawLine(highlight,-4,-16,-1,1);using(var ridge=new Pen(Color.FromArgb(204,115,43),1)){g.DrawLine(ridge,2,-13,6,-13);g.DrawLine(ridge,-5,-8,-1,-8);g.DrawLine(ridge,1,-3,4,-3);}g.Restore(clipped);
+        }
+        using(var leaf=new Pen(Color.FromArgb(83,146,70),2.5f)){leaf.StartCap=leaf.EndCap=LineCap.Round;g.DrawBezier(leaf,0,-20,-5,-24,-7,-25,-6,-29);g.DrawLine(leaf,0,-20,1,-31);g.DrawBezier(leaf,0,-20,6,-22,9,-24,7,-27);}
         g.Restore(saved);
     }
 }
