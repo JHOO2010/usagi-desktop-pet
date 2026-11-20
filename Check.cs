@@ -3,7 +3,7 @@ using System.Drawing;
 using System.Reflection;
 using System.Windows.Forms;
 class Check {
- class FakeAudio : IPetAudio {public int Plays,Stops;public uint Device;public bool Finished;public bool Done {get{return Finished;}}public void Play(short[] samples,uint device){Finished=false;Plays++;Device=device;if(samples.Length==0)throw new Exception("Empty sound");}public void Stop(){Stops++;}public void Dispose(){Stop();}}
+ class FakeAudio : IPetAudio {public int Plays,Stops,Peak,SampleCount;public uint Device;public bool Finished;public bool Done {get{return Finished;}}public void Play(short[] samples,uint device){Finished=false;Plays++;Device=device;SampleCount=samples.Length;Peak=0;foreach(short sample in samples)Peak=Math.Max(Peak,Math.Abs((int)sample));if(samples.Length==0)throw new Exception("Empty sound");}public void Stop(){Stops++;}public void Dispose(){Stop();}}
  static BindingFlags flags=BindingFlags.NonPublic|BindingFlags.Instance;
  static void Set(object o,string n,object v){o.GetType().GetField(n,flags).SetValue(o,v);}
  static object Get(object o,string n){return o.GetType().GetField(n,flags).GetValue(o);}
@@ -13,7 +13,7 @@ class Check {
  static void Step(object o,double dt,Point cursor){o.GetType().GetMethod("UpdatePet",flags).Invoke(o,new object[]{dt,cursor});}
  static Bitmap Frame(object o){return (Bitmap)o.GetType().GetMethod("DrawFrame",flags).Invoke(o,null);}
  static void Assert(bool value,string message){if(!value)throw new Exception(message);}
- [STAThread] static void Main(){try{Run();Features();Clones();SocialChecks();WrappingChecks();MischiefChecks();UpdateCheck.Run();StartupChecks();FrameChecks();SpeechStabilityChecks();}catch(Exception error){Console.WriteLine("FAIL: "+error.Message);Environment.Exit(1);}}
+ [STAThread] static void Main(){try{Run();Features();Clones();SocialChecks();WrappingChecks();MischiefChecks();UpdateCheck.Run();StartupChecks();FrameChecks();SpeechStabilityChecks();RapChecks();}catch(Exception error){Console.WriteLine("FAIL: "+error.Message);Environment.Exit(1);}}
  static void Run(){using(var pet=new Usagi()){
    ((PetSound)Get(pet,"sounds")).Enabled=false;
    var area=Screen.PrimaryScreen.WorkingArea;var cursor=new Point(area.Left+10,area.Top+10);Set(pet,"lastCursor",cursor);Set(pet,"x",(double)area.Left+area.Width/2-110);Set(pet,"y",(double)area.Bottom-pet.Height+8);Set(pet,"direction",1);Set(pet,"decisionTime",100.0);
@@ -166,5 +166,27 @@ Step(pet,.45,far);Assert(State(pet)=="Recover","Recovery stage missing");Step(pe
    double start=(double)Get(pet,"x");Set(pet,"x",start+.125);using(var first=Frame(pet)){Set(pet,"x",start+.375);using(var second=Frame(pet))for(int yy=0;yy<limit;yy++)for(int xx=0;xx<first.Width;xx++)Assert(first.GetPixel(xx,yy)==second.GetPixel(xx,yy),"Subpixel movement shimmered speech text");}
    Console.WriteLine("PASS: stable speech bubble across four walking poses and pixel-aligned text during subpixel movement.");
  }}
+
+ static void RapChecks(){
+   var track=RapTrack.Load(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"sounds","rap.wav"));Assert(track.Duration>10&&track.Duration<15,"Bundled rap excerpt missing");Assert(track.Bpm>=75&&track.Bpm<=167&&track.Level(.5)>=0,"Rap energy analysis failed");
+   string directory=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"usagi-rap-check-"+Guid.NewGuid().ToString("N"));System.IO.Directory.CreateDirectory(directory);string wav=System.IO.Path.Combine(directory,"stereo.wav"),converted=System.IO.Path.Combine(directory,"converted.wav");
+   try{using(var writer=new System.IO.BinaryWriter(System.IO.File.Create(wav))){writer.Write(System.Text.Encoding.ASCII.GetBytes("RIFF"));writer.Write(36+48000*4);writer.Write(System.Text.Encoding.ASCII.GetBytes("WAVEfmt "));writer.Write(16);writer.Write((short)1);writer.Write((short)2);writer.Write(48000);writer.Write(192000);writer.Write((short)4);writer.Write((short)16);writer.Write(System.Text.Encoding.ASCII.GetBytes("data"));writer.Write(48000*4);for(int i=0;i<48000;i++){writer.Write((short)(Math.Sin(i*220.0/48000*Math.PI*2)*4000));writer.Write((short)(Math.Sin(i*220.0/48000*Math.PI*2)*8000));}}
+     var imported=RapTrack.Load(wav);Assert(imported.Samples.Length==44100,"Stereo 48kHz import did not resample");imported.Save(converted);Assert(Math.Abs(RapTrack.Load(converted).Duration-1)<.001,"Rap WAV copy not readable");System.IO.File.WriteAllText(wav,"broken");bool rejected=false;try{RapTrack.Load(wav);}catch(System.IO.InvalidDataException){rejected=true;}Assert(rejected,"Invalid rap file accepted");
+   }finally{foreach(string file in new[]{wav,converted})if(System.IO.File.Exists(file))System.IO.File.Delete(file);System.IO.Directory.Delete(directory);}
+   using(var owner=new Usagi())using(var audience=new Usagi(true,owner)){
+     var list=(System.Collections.IList)typeof(Usagi).GetField("livePets",BindingFlags.NonPublic|BindingFlags.Static).GetValue(null);var area=Screen.PrimaryScreen.WorkingArea;var cursor=new Point(area.Left,area.Top);foreach(var pet in new[]{owner,audience}){list.Add(pet);((PetSound)Get(pet,"sounds")).Enabled=false;Set(pet,"x",area.Left+area.Width/2.0-pet.Width/2);Set(pet,"y",(double)area.Bottom-pet.Height+8);Set(pet,"lastCursor",cursor);Set(pet,"idleTime",0.0);Mood(pet,"Walk");}Set(audience,"x",(double)Get(owner,"x")+130);
+     ((PetSound)Get(owner,"sounds")).Dispose();var audio=new FakeAudio();AudioEndpoint endpoint=new AudioEndpoint{Id="rap-test-headphones",FormFactor=3,WaveId=2};var engine=new PetSound(()=>endpoint,audio);Set(owner,"sounds",engine);
+     try{
+       owner.GetType().GetMethod("BeginRap",flags).Invoke(owner,new object[]{track});var session=Get(owner,"rapSession");Assert(session!=null&&Get(audience,"rapSession")==session,"Audience did not join rap");Assert(audio.Plays==1&&audio.Device==2&&audio.SampleCount==track.Samples.Length,"Rap did not use bound headphone device");int rawPeak=0;foreach(short value in track.Samples)rawPeak=Math.Max(rawPeak,Math.Abs((int)value));Assert(audio.Peak<=rawPeak*.5+1,"Rap bypassed 50 percent master gain");int previous=audio.Plays;Assert(!engine.Play("heart")&&audio.Plays==previous,"Effect interrupted rap");
+       double elapsed=.4;session.GetType().GetField("TimeSource",flags).SetValue(session,new Func<double>(()=>elapsed));double before=(double)Get(audience,"x");for(int i=0;i<40;i++)audience.GetType().GetMethod("UpdateRap",flags).Invoke(audience,new object[]{.02});Assert((double)Get(audience,"x")<before-15,"Audience did not gather");
+       owner.GetType().GetMethod("UpdateRap",flags).Invoke(owner,new object[]{.02});Set(owner,"speechTime",2.0);Set(owner,"words","야하!");Set(owner,"scale",1.4f);Set(audience,"rapInPlace",true);using(var sheet=new Bitmap(960,360))using(var g=Graphics.FromImage(sheet)){g.Clear(System.Drawing.Color.FromArgb(255,248,226));using(var frame=Frame(owner))g.DrawImageUnscaled(frame,0,0);using(var frame=Frame(audience))g.DrawImageUnscaled(frame,480,0);sheet.Save("rap-performance-preview.png");}
+       audience.GetType().GetMethod("BeginPointer",flags).Invoke(audience,new object[]{cursor});Assert(Get(audience,"rapSession")==null&&Get(owner,"rapSession")==session&&engine.RapPlaying,"Grabbing audience stopped leader audio");Set(audience,"pointerDown",false);
+       elapsed=track.Duration+1;Call(owner,"TickRap");Assert(Get(owner,"rapSession")==null&&!engine.RapPlaying&&((ToolStripItem)Get(owner,"rapMenu")).Text=="우사기 랩 🎤","Rap did not end/reset menu");
+       owner.GetType().GetMethod("BeginRap",flags).Invoke(owner,new object[]{track});endpoint=new AudioEndpoint{Id="speaker",FormFactor=1,WaveId=0};engine.Tick(.1);Call(owner,"TickRap");Assert(Get(owner,"rapSession")==null&&Get(audience,"rapSession")==null&&!engine.RapPlaying,"Headphone disconnect did not stop performance");previous=audio.Plays;Assert(!engine.PlayRap(track.Samples)&&audio.Plays==previous,"Rap played through speakers");
+     }finally{Call(owner,"LeaveRap");Call(audience,"LeaveRap");list.Remove(audience);list.Remove(owner);}
+   }
+   Assert(PetSound.LoadClip("heart").Length>=44100&&PetSound.LoadClip("walk_purya").Length==PetSound.LoadClip("heart").Length,"Purya utterance was truncated again");var device=EndpointProbe.Read();if(device!=null&&device.Headphones&&device.WaveId!=uint.MaxValue)Console.WriteLine("Headphone PCM format query: "+WaveAudio.SupportsFormat(device.WaveId));
+   Console.WriteLine("PASS: bundled rap, PCM import/resampling, bound headphone gain and priority, gathering/stop, unplug gate and full Purya clip.");
+ }
 
 }

@@ -14,7 +14,7 @@ partial class Usagi {
 
     }
     void SurpriseNeighbors(){int order=0;foreach(var peer in livePets)if(SameFloor(peer)&&!peer.SocialBusy&&peer.mood!=Mood.Sleep&&peer.mood!=Mood.Drowsy&&peer.scareCooldown<=0&&Math.Abs(peer.x+peer.Width/2-(x+Width/2))<190){peer.scareDelay=.12+order++*.07+peer.rng.NextDouble()*.12;peer.scareCooldown=8;}}
-    void PlaceSharedFood(){LeaveFoodRace();var area=PatrolArea();foreach(var old in foodDrops.ToArray())if(old.Area==area)CancelFoodDrop(old);
+    void PlaceSharedFood(){LeaveRap();LeaveFoodRace();var area=PatrolArea();foreach(var old in foodDrops.ToArray())if(old.Area==area)CancelFoodDrop(old);
         double center=x+Width/2;int side=center<area.Left+area.Width/2?1:-1;
         var drop=new FoodDrop{X=Math.Max(area.Left+45,Math.Min(area.Right-45,center+side*145*scale)),Area=area,Renderer=this};foodDrops.Add(drop);
         var racers=new System.Collections.Generic.List<Usagi>(livePets);if(!racers.Contains(this))racers.Add(this);

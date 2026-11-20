@@ -15,7 +15,7 @@ partial class Usagi {
     }
     double greetLeft,greetReplyDelay=-1,greetCooldown=3,socialBreak,playLeft,playCooldown=7,followLeft,followCooldown=5,napSeekTime;
     Usagi napFriend;bool following,followerWaiting;double followReaction=-1;
-    bool SocialBusy {get{return IsDisposed||paused||menu.Visible||pointerDown||dragging||pendingClicks>0||foodActive||scatterActive||mood==Mood.Hop||mood==Mood.Fall||mood==Mood.Eat||mood==Mood.Nuzzle||mood==Mood.Trip||mood==Mood.Recover||mood==Mood.Stretch;}}
+    bool SocialBusy {get{return PerformingRap||IsDisposed||paused||menu.Visible||pointerDown||dragging||pendingClicks>0||foodActive||scatterActive||mood==Mood.Hop||mood==Mood.Fall||mood==Mood.Eat||mood==Mood.Nuzzle||mood==Mood.Trip||mood==Mood.Recover||mood==Mood.Stretch;}}
     bool SameFloor(Usagi other){return other!=this&&!other.IsDisposed&&Math.Abs((y+Height)-(other.y+other.Height))<8&&PatrolArea()==other.PatrolArea();}
     void CancelSocial(){greetLeft=0;greetReplyDelay=-1;playLeft=0;following=false;followLeft=0;napFriend=null;napSeekTime=0;socialBreak=3;}
     bool UpdateSocial(double dt,System.Drawing.Point cursor,bool mouseMoved){
