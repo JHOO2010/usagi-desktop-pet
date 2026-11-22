@@ -10,7 +10,7 @@ partial class Usagi {
         else if(time<.18){a=2;b=3;mix=SmoothBlend(time,0,.18);}else if(time<.65){a=b=3;mix=0;}else if(time<.92){a=3;b=4;mix=SmoothBlend(time,.65,.92);}else if(time<1.2){a=4;b=5;mix=SmoothBlend(time,.97,1.2);}else{a=b=5;mix=0;}
     }
     static void EatingFrames(double time,out int a,out int b,out float mix){
-        double[] thresholds={.45,.95,1.8,3.5,4.15};a=0;while(a<5&&time>=thresholds[a])a++;b=a;mix=0;
+        double[] thresholds={.20,BiteTimes[0],BiteTimes[1],2.73,3.10};a=0;while(a<5&&time>=thresholds[a])a++;b=a;mix=0;
         if(a>0&&time<thresholds[a-1]+.11){b=a;a--;mix=SmoothBlend(time,thresholds[a],thresholds[a]+.11);}
     }
     void MoveStumble(double dt){if(stateTime>.34)return;var area=Screen.FromPoint(new System.Drawing.Point((int)x+Width/2,(int)y+Height-15)).WorkingArea;

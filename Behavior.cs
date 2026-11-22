@@ -10,7 +10,7 @@ partial class Usagi {
     double sleepInkPoll;bool lightSleepInk;
     class Track {public double X,Y,Age;public float Scale;public int Side;}
     readonly System.Collections.Generic.List<Track> tracks=new System.Collections.Generic.List<Track>();
-    double trackDistance,tripCooldown=18,strokeTime,strokeCooldown,gazeTilt,wiggleTime,lastWiggle,saveIn=10,foodX;
+    Mood riseNext=Mood.Walk;int nextBite;double trackDistance,tripCooldown=18,strokeTime,strokeCooldown,gazeTilt,wiggleTime,lastWiggle,saveIn=10,foodX;
     int footstepSide,wiggleDirection;bool foodActive;string morningSeen="";
     string preferencesPath=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"UsagiPet","settings.txt");
     bool preferencesEnabled=Path.GetFileName(Application.ExecutablePath)=="우사기.exe";
@@ -66,8 +66,8 @@ partial class Usagi {
         if(UpdateCharacterAction(dt))return true;if(UpdateRap(dt))return true;
         if(UpdateScatter(dt))return true;
         if(foodActive&&mood!=Mood.Eat){idleTime=0;double distance=foodX-(x+Width/2);direction=distance<0?-1:1;targetSpeed=38+74*Math.Min(1,Math.Abs(distance)/(90*scale));decisionTime=100;autoHopIn=100;
-            if(Math.Abs(distance)<19*scale&&ClaimFood()){speed=0;moving=false;Change(Mood.Eat);if(character.Key!="usagi")sounds.Play("eat");Say("푸루루루~");}}
-        if(mood==Mood.Eat){idleTime=0;moving=false;speed=0;if(stateTime>=5.3){FinishFood();EmitHearts(false);Say("야하!");Change(Mood.Look);}return true;}
+            if(Math.Abs(distance)<19*scale&&ClaimFood()){speed=0;moving=false;Change(Mood.Eat);nextBite=0;Say("푸루루루~");}}
+        if(mood==Mood.Eat){idleTime=0;moving=false;speed=0;if(character.Key!="usagi"&&nextBite<3&&stateTime>=BiteTimes[nextBite]){sounds.PlayAmbient("bite");nextBite++;}if(stateTime>=EatingEnd){FinishFood();EmitHearts(false);Say("야하!");Change(Mood.Look);}return true;}
         if(mood==Mood.Nuzzle){idleTime=0;moving=false;speed=0;if(stateTime>1.8){Change(Mood.Look);decisionTime=2;}return true;}
         if(mood==Mood.Trip){moving=false;speed=0;MoveStumble(dt);if(stateTime>.72){Change(Mood.Recover);AutoSay("…하아?");}return true;}
         if(mood==Mood.Recover){moving=false;if(stateTime>1.35){Change(Mood.Walk);targetSpeed=50;decisionTime=2;}return true;}
@@ -137,7 +137,8 @@ partial class Usagi {
     }
     // Four deliberate bites, with a brief approach, chew, and swallow for each one.
     static int FoodBites(double time){int bites=0;foreach(double bite in new[]{.95,1.8,2.65,3.5})if(time>=bite)bites++;return bites;}
-    static double ChewPulse(double time){if(time<.7||time>4.6)return 0;double phase=(time-.7)% .85;return Math.Pow(Math.Max(0,Math.Sin(phase/.85*Math.PI*4)),2);}
+    static readonly double[] BiteTimes={.72,1.67,2.55}; const double EatingEnd=3.25;
+    static double ChewPulse(double time){if(time<.4||time>=2.73)return 0;double pulse=0;foreach(double bite in BiteTimes){double u=(time-bite)/.12;pulse=Math.Max(pulse,Math.Exp(-u*u));}return pulse;}
     static float FoodRemaining(double time){double eaten=0;foreach(double bite in new[]{.95,1.8,2.65,3.5}){double u=Math.Max(0,Math.Min(1,(time-bite)/.18));eaten+=.225*u*u*(3-2*u);}eaten+=.1*Math.Max(0,Math.Min(1,(time-3.9)/.25));return (float)Math.Max(0,1-eaten);}
     static void DrawPizzaBun(Graphics g,float cx,float cy,float size,float remaining){DrawPizzaBun(g,cx,cy,size,remaining,0);}
     static void DrawPizzaBun(Graphics g,float cx,float cy,float size,float remaining,float rotation){if(remaining<=0)return;var saved=g.Save();g.TranslateTransform(cx,cy);g.ScaleTransform(size,size);g.RotateTransform(rotation);

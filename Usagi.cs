@@ -55,7 +55,7 @@ partial class Usagi : Form {
     class Heart {public double Age,Life,Angle,Radius,BaseSize,Rotation,WorldX,WorldY;public float Scale;public Color Color;}
     readonly System.Collections.Generic.List<Heart> hearts=new System.Collections.Generic.List<Heart>();
     int pendingClicks; double clickDeadline,lastClickTime=-10,lastBurstTime=-10; System.Drawing.Point lastClickPoint;
-    enum Mood { Walk, Turn, Look, Sit, Drowsy, Sleep, Stretch, Hop, Dragged, Fall, Nuzzle, Eat, Trip, Recover }
+    enum Mood { Walk, Turn, Look, Sit, Drowsy, Sleep, Stretch, Hop, Dragged, Fall, Nuzzle, Eat, Trip, Recover, Rise }
     [DllImport("user32.dll")] static extern IntPtr GetDC(IntPtr h);
     [DllImport("user32.dll")] static extern int ReleaseDC(IntPtr h,IntPtr dc);
     readonly Random rng=new Random(Guid.NewGuid().GetHashCode());
@@ -116,7 +116,7 @@ partial class Usagi : Form {
         var bits=copy.LockBits(rect,ImageLockMode.ReadOnly,PixelFormat.Format32bppArgb);try{var row=new byte[source.Width*4];for(int j=0;j<source.Height;j++){Marshal.Copy(IntPtr.Add(bits.Scan0,j*bits.Stride),row,0,row.Length);for(int i=0;i<source.Width;i++)if(row[i*4+3]>30){l=Math.Min(l,i);r=Math.Max(r,i);top=Math.Min(top,j);b=Math.Max(b,j);}}}finally{copy.UnlockBits(bits);}
         return r<l?new Bitmap(source):copy.Clone(new Rectangle(l,top,r-l+1,b-top+1),PixelFormat.Format32bppArgb);
     }}
-    void Change(Mood next){if(mood==Mood.Sleep&&next!=Mood.Sleep)sounds.StopSleep();mood=next;settling=null;stateTime=0;if(next==Mood.Sit)restDuration=1.4+rng.NextDouble()*3.1;else if(next==Mood.Look)restDuration=.8+rng.NextDouble()*1.8;if(next==Mood.Stretch)stretchDuration=.85+rng.NextDouble()*.95;if(next!=Mood.Walk&&next!=Mood.Hop)moving=false;}
+    void Change(Mood next){if(characterArt!=null&&characterArt.HasActionStrips&&((mood==Mood.Sit&&next==Mood.Walk)||((mood==Mood.Sleep||mood==Mood.Drowsy)&&next==Mood.Stretch)||(mood==Mood.Nuzzle&&next==Mood.Look))){riseNext=next;next=Mood.Rise;}if(mood==Mood.Sleep&&next!=Mood.Sleep)sounds.StopSleep();mood=next;settling=null;stateTime=0;if(next==Mood.Sit)restDuration=1.4+rng.NextDouble()*3.1;else if(next==Mood.Look)restDuration=.8+rng.NextDouble()*1.8;if(next==Mood.Stretch)stretchDuration=.85+rng.NextDouble()*.95;if(next!=Mood.Walk&&next!=Mood.Hop)moving=false;}
     void Settle(Mood next){if(speed<1){speed=0;Change(next);}else{settling=next;targetSpeed=0;}}
     void Say(string text){text=CharacterSpeech(text);words=text;speechTime=1.5+rng.NextDouble()*1.1;nextSpeechTime=7+rng.NextDouble()*3;recent.Enqueue(text);while(recent.Count>4)recent.Dequeue();}
     string Choose(string[] phrases){var choices=new System.Collections.Generic.List<string>();foreach(var p in phrases)if(!recent.Contains(p))choices.Add(p);if(choices.Count==0)foreach(var p in phrases)if(p!=words)choices.Add(p);return choices[rng.Next(choices.Count)];}
@@ -170,6 +170,7 @@ partial class Usagi : Form {
         if(!edgeTransit&&idleTime>=10&&mood!=Mood.Sleep&&mood!=Mood.Drowsy&&mood!=Mood.Hop){speed=0;Change(Mood.Drowsy);}
         if(mood==Mood.Drowsy&&stateTime>.65){Change(Mood.Sleep);speechTime=0;nextSpeechTime=12+rng.NextDouble()*10;sleepSoundIn=0;}
         if(mood==Mood.Sleep){moving=false;sleepSoundIn-=dt;if(sleepSoundIn<=0){if(!isClone)sounds.PlayAmbient("sleep");sleepSoundIn=9+rng.NextDouble()*8;}return;}
+        if(mood==Mood.Rise){moving=false;speed=0;if(stateTime>=.32)Change(riseNext);return;}
         if(mood==Mood.Stretch&&stateTime>stretchDuration){targetSpeed=rng.Next(46,90);decisionTime=1+rng.NextDouble()*2;Change(Mood.Walk);}
         if((mood==Mood.Sit||mood==Mood.Look)&&stateTime>restDuration){targetSpeed=rng.Next(42,97);decisionTime=1.5+rng.NextDouble()*3;Change(Mood.Walk);}
         if(mood==Mood.Turn){speed*=Math.Exp(-dt/.085);if(stateTime>.24&&speed<1){direction=wantedDirection;Change(Mood.Walk);}}
@@ -201,12 +202,12 @@ partial class Usagi : Form {
         if(mood==Mood.Drowsy)angle=(float)Math.Sin(stateTime*4)*5;
         if(mood==Mood.Dragged){pose=held[HeldFrame(heldTime)];angle=(float)Math.Sin(heldTime*(heldTime<2.5?10:3))*(heldTime<2.5?2.5f:.7f);}
         if(mood==Mood.Fall||scatterActive)pose=poses[3];
-        if(characterArt.HasActionStrips){if(mood==Mood.Look)pose=sprite;else if(mood==Mood.Sit)pose=characterArt.SitFrames[stateTime<.4?Math.Min(3,(int)(stateTime/.1)):t%4.5<.12?3:2];else if(mood==Mood.Drowsy)pose=characterArt.SitFrames[3];else if(mood==Mood.Sleep)pose=characterArt.SleepFrames[(int)(t*.8)%4];else if(mood==Mood.Stretch)pose=characterArt.StretchFrames[Math.Min(3,(int)(stateTime/Math.Max(.1,stretchDuration)*4))];else if(mood==Mood.Hop)pose=characterArt.JumpFrames[stateTime<.1?0:hopVelocity>0?1:hopHeight>10?2:3];}
+        if(characterArt.HasActionStrips){if(mood==Mood.Rise)pose=characterArt.SitFrames[stateTime<.10?2:stateTime<.23?1:0];else if(mood==Mood.Look)pose=sprite;else if(mood==Mood.Sit)pose=characterArt.SitFrames[stateTime<.10?0:stateTime<.24?1:stateTime>1.5&&t%4.5<.12?3:2];else if(mood==Mood.Drowsy)pose=characterArt.SitFrames[3];else if(mood==Mood.Sleep)pose=characterArt.SleepFrames[(int)(t*.8)%4];else if(mood==Mood.Stretch)pose=characterArt.StretchFrames[Math.Min(3,(int)(stateTime/Math.Max(.1,stretchDuration)*4))];else if(mood==Mood.Hop)pose=characterArt.JumpFrames[stateTime<.1?0:hopVelocity>0?1:hopHeight>10?2:3];}
         float factor=68*scale/headWidths[pose];if(scatterActive){double appear=Math.Min(1,scatterTime/.16);factor*=(float)(.4+.6*(1-Math.Pow(1-appear,3)));angle=(float)(scatterVX/32*Math.Sin(Math.Min(1,scatterTime)*Math.PI));}
         float h=pose.Height*factor,width=pose.Width*factor,bottom=Height-10-bob-(float)hopHeight;
         float squash=landing>0?(float)Math.Sin(landing/.26*Math.PI)*.1f:0;
         if(!paused&&mood==Mood.Sleep&&!characterArt.HasActionStrips){h+=(float)Math.Sin(t*2.2)*1.2f;}
-        if(mood==Mood.Nuzzle){pose=poses[1];factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;angle=(float)Math.Sin(t*5)*2;}
+        if(mood==Mood.Nuzzle){pose=characterArt.HasActionStrips?characterArt.SitFrames[stateTime<.12?0:stateTime<.25?1:3]:poses[1];factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;angle=(float)Math.Sin(t*5)*2;}
         if(mood==Mood.Eat){int a,b;float mix;EatingFrames(stateTime,out a,out b,out mix);pose=eating[a];factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;bob=(float)ChewPulse(stateTime)*.65f*scale;bottom-=bob;angle=stateTime<.65?(float)Math.Sin(stateTime/.65*Math.PI)*3:((float)ChewPulse(stateTime)-.5f)*.65f;}
         if(mood==Mood.Trip||mood==Mood.Recover){int a,b;float mix;StumbleFrames(mood==Mood.Recover,stateTime,out a,out b,out mix);pose=(direction>0?stumble:leftStumble)[a];factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;angle=0;squash=0;}
         if(mood==Mood.Look)angle+=(float)gazeTilt;

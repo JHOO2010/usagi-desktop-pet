@@ -1,0 +1,32 @@
+[
+  {
+    "key": "chiikawa",
+    "done": true,
+    "prompt": "Edit this exact chiikawa game sprite eating strip. Preserve character identity, smooth outlines, colors, head diameter, face proportions, body shape, feet baseline and FOUR equal cells in ONE horizontal row. Only refine the mouth, dumpling and the TWO hands: frame1 hold a whole small closed pizza bun with the upper edge TOUCHING the mouth opening; frame2 half-eaten bun upper bitten edge TOUCHING lips (lift hands as needed, zero gap); frame3 a tiny final morsel actually entering mouth, the food tip TOUCHES mouth at same face location, eyes gently closed; frame4 no food, closed satisfied mouth, exactly two EMPTY hands lowered. No extra arms, no floating food or food on belly, no particles, no motion lines, no text. Do not zoom or enlarge any head. Preserve fully transparent background."
+  },
+  {
+    "key": "hachiware",
+    "done": true,
+    "prompt": "Edit this exact hachiware game sprite eating strip. Preserve character identity, smooth outlines, colors, head diameter, face proportions, body shape, feet baseline and FOUR equal cells in ONE horizontal row. Only refine the mouth, dumpling and the TWO hands: frame1 hold a whole small closed pizza bun with the upper edge TOUCHING the mouth opening; frame2 half-eaten bun upper bitten edge TOUCHING lips (lift hands as needed, zero gap); frame3 a tiny final morsel actually entering mouth, the food tip TOUCHES mouth at same face location, eyes gently closed; frame4 no food, closed satisfied mouth, exactly two EMPTY hands lowered. No extra arms, no floating food or food on belly, no particles, no motion lines, no text. Do not zoom or enlarge any head. Preserve fully transparent background."
+  },
+  {
+    "key": "momonga",
+    "done": true,
+    "prompt": "Edit this exact momonga game sprite eating strip. Preserve identity, smooth outlines, colors, head diameter, face proportions, body shape, feet baseline and FOUR equal cells in ONE horizontal row. Only refine mouth, dumpling and TWO hands: frame1 whole closed pizza bun upper edge TOUCHES mouth; frame2 half-eaten bun bitten edge TOUCHES lips, hands lifted, zero gap; frame3 tiny final morsel entering mouth, tip TOUCHES mouth at same face location, eyes gently closed; frame4 swallowed, no food, satisfied closed mouth, two EMPTY hands lowered. Exactly two total arms, no floating food or food on belly, no particles, motion lines or text. No zoom or head size changes. Fully transparent background."
+  },
+  {
+    "key": "kurimanju",
+    "done": true,
+    "prompt": "Edit this exact kurimanju game sprite eating strip. Preserve identity, smooth outlines, colors, head diameter, face proportions, body shape, feet baseline and FOUR equal cells in ONE horizontal row. Only refine mouth, dumpling and TWO hands: frame1 whole closed pizza bun upper edge TOUCHES mouth; frame2 half-eaten bun bitten edge TOUCHES lips, hands lifted, zero gap; frame3 tiny final morsel entering mouth, tip TOUCHES mouth at same face location, eyes gently closed; frame4 swallowed, no food, satisfied closed mouth, two EMPTY hands lowered. Exactly two total arms, no floating food or food on belly, no particles, motion lines or text. No zoom or head size changes. Fully transparent background."
+  },
+  {
+    "key": "rakko",
+    "done": true,
+    "prompt": "Edit this exact rakko game sprite eating strip. Preserve identity, smooth outlines, colors, head diameter, face proportions, body shape, feet baseline and FOUR equal cells in ONE horizontal row. Only refine mouth, dumpling and TWO hands: frame1 whole closed pizza bun upper edge TOUCHES mouth; frame2 half-eaten bun bitten edge TOUCHES lips, hands lifted, zero gap; frame3 tiny final morsel entering mouth, tip TOUCHES mouth at same face location, eyes gently closed; frame4 swallowed, no food, satisfied closed mouth, two EMPTY hands lowered. Exactly two total arms, no floating food or food on belly, no particles, motion lines or text. No zoom or head size changes. Fully transparent background."
+  },
+  {
+    "key": "shisa",
+    "done": true,
+    "prompt": "Edit this exact shisa game sprite eating strip. Preserve identity, smooth outlines, colors, head diameter, face proportions, body shape, feet baseline and FOUR equal cells in ONE horizontal row. Only refine mouth, dumpling and TWO hands: frame1 whole closed pizza bun upper edge TOUCHES mouth; frame2 half-eaten bun bitten edge TOUCHES lips, hands lifted, zero gap; frame3 tiny final morsel entering mouth, tip TOUCHES mouth at same face location, eyes gently closed; frame4 swallowed, no food, satisfied closed mouth, two EMPTY hands lowered. Exactly two total arms, no floating food or food on belly, no particles, motion lines or text. No zoom or head size changes. Fully transparent background."
+  }
+]

@@ -14,7 +14,7 @@ class PetSound : IDisposable {
     public PetSound():this(EndpointProbe.Read,new WaveAudio()){}
     internal PetSound(Func<AudioEndpoint> source,IPetAudio backend){probe=source;output=backend;}
     public bool Play(string effect){try{return PlaySamples(effect,LoadCharacterClip(effect),2);}catch{return false;}}
-    short[] LoadCharacterClip(string effect){if(CharacterKey=="usagi")return LoadClip(effect);string relative=CharacterSoundCues.RelativePath(CharacterKey,effect);if(relative==null)return new short[0];string key="cue/"+relative;short[] samples;if(clips.TryGetValue(key,out samples))return samples;string file=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,relative.Replace('/',Path.DirectorySeparatorChar));if(!File.Exists(file))return new short[0];return LoadPcmFile(key,file);}
+    short[] LoadCharacterClip(string effect){if(CharacterKey=="usagi")return LoadClip(effect);string relative=CharacterSoundCues.RelativePath(CharacterKey,effect);if(relative==null)return new short[0];string key="cue/"+effect+"/"+relative;short[] samples;if(clips.TryGetValue(key,out samples))return samples;string file=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,relative.Replace('/',Path.DirectorySeparatorChar));if(!File.Exists(file))return new short[0];samples=CharacterSoundCues.Balance(effect,LoadPcmFile("source/"+relative,file));clips[key]=samples;return samples;}
     bool Active {get{return playingDevice!=null&&!output.Done;}}
     bool PlaySamples(string effect,short[] samples,int requestedPriority){if(!Enabled||samples==null||samples.Length==0)return false;lock(voiceLock){try{
         var device=probe();if(device==null||!device.Headphones||device.WaveId==uint.MaxValue)return false;
