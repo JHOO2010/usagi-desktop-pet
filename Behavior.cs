@@ -106,7 +106,7 @@ partial class Usagi {
         pet.x=x;pet.y=y;pet.idleTime=0;pet.speechTime=0;pet.nextSpeechTime=7+rng.NextDouble()*3;
         int slot=cloneSequence++%4;pet.scatterVX=new[]{-225.0,140.0,-120.0,245.0}[slot];pet.scatterVY=-235-slot%2*45;pet.scatterActive=true;pet.scatterTime=0;pet.Change(Mood.Fall);
         pet.direction=pet.scatterVX>0?1:-1;pet.targetSpeed=44+rng.NextDouble()*45;pet.decisionTime=1+rng.NextDouble()*2;
-        livePets.Add(pet);pet.Show();pet.Render();
+        livePets.Add(pet);pet.tray.Visible=true;pet.Show();pet.Render();
     }
     bool UpdateScatter(double dt){if(!scatterActive)return false;
         scatterTime+=dt;scatterVY+=640*dt;x+=scatterVX*dt;y+=scatterVY*dt;scatterVX*=Math.Exp(-dt*.6);

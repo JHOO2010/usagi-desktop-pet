@@ -1,4 +1,4 @@
-param([ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version = '2.2.0')
+param([ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version = '2.2.1')
 $ErrorActionPreference = 'Stop'
 New-Item -ItemType Directory -Path "$PSScriptRoot\output" -Force | Out-Null
 $metadata = '[assembly: System.Reflection.AssemblyTitle("먼작귀 펫")]' + "`n" + '[assembly: System.Reflection.AssemblyVersion("' + $Version + '.0")]' + "`n" + '[assembly: System.Reflection.AssemblyFileVersion("' + $Version + '.0")]'

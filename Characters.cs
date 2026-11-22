@@ -19,7 +19,7 @@ partial class Usagi {
         new CharacterDef("rakko","랏코",1.05,"검술 연습하기","좋아.","잘했어.","함께 가자.","음!"),
         new CharacterDef("shisa","시사",.94,"꾸벅 인사하기","어서 오세요!","힘낼게요!","감사해요!","헤헤~")
     };
-    CharacterDef character=characters[0];CharacterArt characterArt;double characterActionTime,characterActionIn=25;
+    event EventHandler CharacterChanged;CharacterDef character=characters[0];CharacterArt characterArt;double characterActionTime,characterActionIn=25;
     sealed class CharacterArt {
         internal Bitmap Sprite;internal Bitmap[] Walk=new Bitmap[4],LeftWalk=new Bitmap[4],Poses=new Bitmap[4],Stumble=new Bitmap[6],LeftStumble=new Bitmap[6],Eating=new Bitmap[6],Held=new Bitmap[6],Special=new Bitmap[4],SitFrames=new Bitmap[4],SleepFrames=new Bitmap[4],StretchFrames=new Bitmap[4],JumpFrames=new Bitmap[4];internal bool HasActionStrips;
         internal readonly Dictionary<Bitmap,float> Heads=new Dictionary<Bitmap,float>(),Centers=new Dictionary<Bitmap,float>();internal float BodyUnits,HeadUnits;
@@ -55,10 +55,11 @@ partial class Usagi {
     static CharacterDef FindCharacter(string key){foreach(var candidate in characters)if(candidate.Key==key)return candidate;return characters[0];}
     void ApplyCharacter(string key,bool react){var next=FindCharacter(key);var art=GetCharacterArt(next.Key);if(react){LeaveRap();LeaveFoodRace();CancelSocial();scatterActive=false;hopHeight=0;speed=0;Change(Mood.Look);}
         character=next;characterArt=art;sounds.CharacterKey=next.Key;sprite=art.Sprite;Array.Copy(art.Walk,walk,4);Array.Copy(art.LeftWalk,leftWalk,4);Array.Copy(art.Poses,poses,4);Array.Copy(art.Stumble,stumble,6);Array.Copy(art.LeftStumble,leftStumble,6);Array.Copy(art.Eating,eating,6);Array.Copy(art.Held,held,6);headWidths.Clear();foreach(var pair in art.Heads)headWidths.Add(pair.Key,pair.Value);
-        walkingSpeechHeight=0;characterActionTime=0;characterActionIn=18+rng.NextDouble()*25;Text="먼작귀 펫 · "+next.Name;if(tray!=null){var icon=CreateCharacterIcon();tray.Icon=icon;var previous=trayIcon;trayIcon=icon;if(previous!=null)previous.Dispose();}if(react){Say(next.Phrases[0]);EmitHearts(false);SavePreferences();}RefreshCharacterMenu();
+        walkingSpeechHeight=0;characterActionTime=0;characterActionIn=18+rng.NextDouble()*25;Text="먼작귀 펫 · "+next.Name;if(tray!=null){var icon=CreateCharacterIcon();tray.Icon=icon;Icon=icon;tray.Text="먼작귀 펫 · "+character.Name+" · "+targetFrameRate+"Hz · 1번 폴짝 / 2번 하트";var previous=trayIcon;trayIcon=icon;if(previous!=null)previous.Dispose();}if(react){Say(next.Phrases[0]);EmitHearts(false);SavePreferences();}RefreshCharacterMenu();if(CharacterChanged!=null)CharacterChanged(this,EventArgs.Empty);
     }
     [System.Runtime.InteropServices.DllImport("user32.dll")]static extern bool DestroyIcon(IntPtr icon);
-    Icon CreateCharacterIcon(){using(var image=new Bitmap(64,64))using(var g=Graphics.FromImage(image)){g.Clear(Color.Transparent);g.InterpolationMode=System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;float factor=Math.Min(60f/sprite.Width,60f/sprite.Height);float w=sprite.Width*factor,h=sprite.Height*factor;g.DrawImage(sprite,(64-w)/2,(64-h)/2,w,h);IntPtr handle=image.GetHicon();try{using(var icon=Icon.FromHandle(handle))return (Icon)icon.Clone();}finally{DestroyIcon(handle);}}}
+    Bitmap CreateCharacterLogo(int size,bool faceOnly){var result=new Bitmap(size,size);using(var g=Graphics.FromImage(result)){g.Clear(Color.Transparent);g.InterpolationMode=System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;g.PixelOffsetMode=System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;float ratio=character.Key=="usagi"?.76f:character.Key=="rakko"?.61f:character.Key=="shisa"?.70f:.68f;var source=new RectangleF(0,0,sprite.Width,faceOnly?sprite.Height*ratio:sprite.Height);float factor=Math.Min((size-2)/source.Width,(size-2)/source.Height),w=source.Width*factor,h=source.Height*factor;g.DrawImage(sprite,new RectangleF((size-w)/2,(size-h)/2,w,h),source,GraphicsUnit.Pixel);}return result;}
+    Icon CreateCharacterIcon(){using(var image=CreateCharacterLogo(64,true)){IntPtr handle=image.GetHicon();try{using(var icon=Icon.FromHandle(handle))return (Icon)icon.Clone();}finally{DestroyIcon(handle);}}}
     void RefreshCharacterMenu(){if(menu!=null){((BubbleMenu)menu).Heading=character.Name;if(cloneMenuAction!=null)cloneMenuAction.Text="친구 추가…";if(cleanupMenu!=null)cleanupMenu.Text="친구들 정리";}}
     string CharacterSpeech(string text){if(character.Key=="usagi")return text;if(characterActionTime>0)return character.Phrases[0];return character.Phrases[rng.Next(character.Phrases.Length)];}
     void TickCharacter(double dt){if(character.Key=="usagi"||characterActionTime>0)return;characterActionIn-=dt;if(characterActionIn<=0&&!SocialBusy&&!infoOpen&&(mood==Mood.Walk||mood==Mood.Look||mood==Mood.Sit)){BeginCharacterAction();}}
@@ -76,7 +77,7 @@ partial class Usagi {
         else if(character.Key=="rakko"){angle=seconds<.4?SmoothBlend(seconds,0,.4)*7:seconds<.72?7-SmoothBlend(seconds,.4,.72)*15:-8*(1-SmoothBlend(seconds,.72,1.4));}
         else if(character.Key=="shisa"){bob=(float)(Math.Sin(u*Math.PI)*2.4);squash=(float)(envelope*.018);}
     }
-    void AddFriend(string key){if(livePets.Count>=16){Say(character.Phrases[0]);return;}var pet=new Usagi(true,this);pet.ApplyCharacter(key,false);pet.scale=scale;pet.sounds.Enabled=sounds.Enabled;pet.x=x;pet.y=y;pet.scatterActive=true;pet.scatterVX=(rng.Next(2)==0?-1:1)*(140+rng.Next(90));pet.scatterVY=-235;pet.Change(Mood.Fall);livePets.Add(pet);pet.Show();pet.Render();}
+    void AddFriend(string key){if(livePets.Count>=16){Say(character.Phrases[0]);return;}var pet=new Usagi(true,this);pet.ApplyCharacter(key,false);pet.scale=scale;pet.sounds.Enabled=sounds.Enabled;pet.x=x;pet.y=y;pet.scatterActive=true;pet.scatterVX=(rng.Next(2)==0?-1:1)*(140+rng.Next(90));pet.scatterVY=-235;pet.Change(Mood.Fall);livePets.Add(pet);pet.tray.Visible=true;pet.Show();pet.Render();}
 
     sealed class CharacterChoice : SettingButton {
         internal Bitmap Portrait;internal float Head;internal CharacterChoice(){HideCaption=true;}

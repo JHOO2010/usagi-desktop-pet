@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Drawing.Drawing2D;
@@ -47,11 +47,14 @@ partial class Usagi {
         var anchor=new Point((int)Math.Round(x)+Width/2,(int)Math.Round(y+petTop)-5);var area=Screen.FromPoint(anchor).WorkingArea;
         form.Location=new Point(Math.Max(area.Left+4,Math.Min(area.Right-form.Width-4,anchor.X-form.Width/2)),Math.Max(area.Top+4,Math.Min(area.Bottom-form.Height-4,anchor.Y-form.Height)));
         int tail=Math.Max(24,Math.Min(form.Width-24,anchor.X-form.Left));using(var path=BubbleMenu.Outline(form.Width,form.Height,tail))form.Region=new Region(path);
-        form.Paint+=(s,e)=>{var g=e.Graphics;g.SmoothingMode=System.Drawing.Drawing2D.SmoothingMode.AntiAlias;using(var path=BubbleMenu.Outline(form.Width,form.Height,tail))using(var pen=new Pen(Color.FromArgb(164,135,104),1.4f))g.DrawPath(pen,path);SettingArt.Icon(g,"settings",27,26);using(var line=new Pen(SettingArt.Line))g.DrawLine(line,26,310,394,310);};
+        form.Paint+=(s,e)=>{var g=e.Graphics;g.SmoothingMode=System.Drawing.Drawing2D.SmoothingMode.AntiAlias;using(var path=BubbleMenu.Outline(form.Width,form.Height,tail))using(var pen=new Pen(Color.FromArgb(164,135,104),1.4f))g.DrawPath(pen,path);using(var line=new Pen(SettingArt.Line))g.DrawLine(line,26,310,394,310);};
         var titleFont=new Font(menuFont.FontFamily,15);var smallFont=new Font(menuFont.FontFamily,9);form.Disposed+=(s,e)=>{titleFont.Dispose();smallFont.Dispose();};
         Action<string,int,int,int,Font,Color> text=(value,left,top,width,font,color)=>form.Controls.Add(new Label{Text=value,Location=new Point(left,top),Size=new Size(width,24),Font=font,ForeColor=color,UseCompatibleTextRendering=true});
-        text("먼작귀 펫",56,23,280,titleFont,SettingArt.Ink);
-        var characterSelect=new SettingButton{Text="캐릭터 · "+character.Name,Location=new Point(26,55),Size=new Size(230,30)};form.Controls.Add(characterSelect);characterSelect.Click+=(s,e)=>ShowCharacterPicker(form,false);
+        text("먼작귀 펫",66,23,270,titleFont,SettingArt.Ink);
+        var logo=new PictureBox{Name="CharacterLogo",Location=new Point(24,17),Size=new Size(34,34),SizeMode=PictureBoxSizeMode.CenterImage,BackColor=SettingArt.Cream};form.Controls.Add(logo);
+        Icon settingsIcon=null;Action refreshIdentity=()=>{var selector=form.Controls["CharacterSelector"];if(selector!=null)selector.Text="캐릭터 · "+character.Name;var oldImage=logo.Image;logo.Image=CreateCharacterLogo(32,false);logo.AccessibleName=character.Name+" 로고";if(oldImage!=null)oldImage.Dispose();var previous=settingsIcon;settingsIcon=CreateCharacterIcon();form.Icon=settingsIcon;form.Text="먼작귀 펫 설정 · "+character.Name;if(previous!=null)previous.Dispose();};
+        EventHandler identityChanged=(s,e)=>refreshIdentity();CharacterChanged+=identityChanged;refreshIdentity();form.Disposed+=(s,e)=>{CharacterChanged-=identityChanged;if(logo.Image!=null)logo.Image.Dispose();if(settingsIcon!=null)settingsIcon.Dispose();};
+        var characterSelect=new SettingButton{Name="CharacterSelector",Text="캐릭터 · "+character.Name,Location=new Point(26,55),Size=new Size(230,30)};form.Controls.Add(characterSelect);characterSelect.Click+=(s,e)=>ShowCharacterPicker(form,false);
         var addFriend=new SettingButton{Text="친구 추가",Location=new Point(266,55),Size=new Size(126,30)};form.Controls.Add(addFriend);addFriend.Click+=(s,e)=>ShowCharacterPicker(form,true);
         Action<string,string,int> label=(icon,value,top)=>{var row=new Label{Text=value,Location=new Point(26,top),Size=new Size(145,30),Padding=new Padding(30,4,0,0),UseCompatibleTextRendering=true};row.Paint+=(s,e)=>SettingArt.Icon(e.Graphics,icon,1,5);form.Controls.Add(row);};
         Func<string,int,int,int,SettingButton> button=(value,left,top,width)=>{var control=new SettingButton{Text=value,Location=new Point(left,top),Size=new Size(width,32)};form.Controls.Add(control);return control;};
