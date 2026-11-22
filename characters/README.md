@@ -1,0 +1,29 @@
+# 먼작귀 펫 캐릭터 시트
+
+기존 우사기 에셋은 프로젝트 루트의 usagi.png / walk.png / poses.png / stumble.png / eating.png / held.png를 그대로 사용합니다.
+새 캐릭터는 built-in image_gen 도구로 제작한 투명 PNG 동작 시트입니다.
+
+- [치이카와](chiikawa.png)
+- [하치와레](hachiware.png)
+- [모몽가](momonga.png)
+- [쿠리만쥬](kurimanju.png)
+- [랏코](rakko.png)
+- [시사](shisa.png)
+
+각 시트는 6열 × 5행 30칸입니다. 왼쪽부터 오른쪽으로 읽습니다.
+
+| 번호 | 동작 |
+|---|---|
+| 0 | 기본 서기 |
+| 1–4 | 오른쪽 걷기 4단계 (왼쪽은 런타임 미러) |
+| 5–8 | 앉기·수면·기지개·점프 |
+| 9–14 | 넘어짐·회복 6단계 |
+| 15–20 | 만두 먹기 6단계 |
+| 21–26 | 잡혔을 때 버둥거림·뚱한 표정 |
+| 27–29 | 캐릭터 전용 행동 3단계 |
+
+알파 경계로 칸별 투명 여백을 정리하고 얼굴 너비로 런타임 크기를 맞춥니다. 발끝은 공통 바닥 기준에 고정합니다.
+그림은 팬 프로젝트용 AI 생성 연출이며 공식 원화가 아닙니다. 캐릭터의 권리는 원권리자에게 있습니다.
+
+최종 프롬프트 전체: [asset-prompts/characters-v2.json](../asset-prompts/characters-v2.json)
+음성 출처와 가공: [sounds/SOURCES.txt](../sounds/SOURCES.txt)

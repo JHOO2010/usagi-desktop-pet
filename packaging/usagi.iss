@@ -1,13 +1,13 @@
 ﻿#ifndef AppRelease
-#define AppRelease "1.11.6"
+#define AppRelease "2.0.0"
 #endif
 [Setup]
 AppId={{55757449-1D38-42D2-A5FA-2C4EAE3A3462}
-AppName=우사기 산책 펫
+AppName=먼작귀 펫
 AppVersion={#AppRelease}
 AppPublisher=JH
 DefaultDirName={localappdata}\Programs\UsagiPet
-DefaultGroupName=우사기 산책 펫
+DefaultGroupName=먼작귀 펫
 PrivilegesRequired=lowest
 OutputDir=..\output
 OutputBaseFilename=UsagiPet-Setup-{#AppRelease}
@@ -20,7 +20,7 @@ DisableProgramGroupPage=yes
 MinVersion=10.0
 CloseApplications=yes
 RestartApplications=no
-UninstallDisplayName=우사기 산책 펫
+UninstallDisplayName=먼작귀 펫
 
 [Languages]
 Name: "korean"; MessagesFile: "compiler:Languages\Korean.isl"
@@ -45,13 +45,22 @@ Source: "설치후_사용법.txt"; DestDir: "{app}"; DestName: "사용법.txt"; 
 Source: "..\fonts\*.ttf"; DestDir: "{app}\fonts"; Flags: ignoreversion
 Source: "..\fonts\OFL.txt"; DestDir: "{app}\fonts"; Flags: ignoreversion
 
+Source: "..\characters\*.png"; DestDir: "{app}\characters"; Flags: ignoreversion
+Source: "..\sounds\characters\*.wav"; DestDir: "{app}\sounds\characters"; Flags: ignoreversion
+
+[InstallDelete]
+Type: files; Name: "{userprograms}\우사기 산책 펫\우사기 산책 펫.lnk"
+Type: files; Name: "{userprograms}\우사기 산책 펫\사용법.lnk"
+Type: dirifempty; Name: "{userprograms}\우사기 산책 펫"
+Type: files; Name: "{autodesktop}\우사기 산책 펫.lnk"
+
 [Icons]
-Name: "{group}\우사기 산책 펫"; Filename: "{app}\우사기.exe"; WorkingDir: "{app}"
+Name: "{group}\먼작귀 펫"; Filename: "{app}\우사기.exe"; WorkingDir: "{app}"
 Name: "{group}\사용법"; Filename: "{app}\사용법.txt"
-Name: "{autodesktop}\우사기 산책 펫"; Filename: "{app}\우사기.exe"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{autodesktop}\먼작귀 펫"; Filename: "{app}\우사기.exe"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\우사기.exe"; Description: "우사기 산책 펫 실행"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\우사기.exe"; Description: "먼작귀 펫 실행"; Flags: nowait postinstall skipifsilent
 
 [Code]
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);

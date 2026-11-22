@@ -25,13 +25,13 @@ class SettingButton : Control, IButtonControl {
     protected override void OnClick(EventArgs e){base.OnClick(e);if(DialogResult!=DialogResult.None){var form=FindForm();if(form!=null){form.DialogResult=DialogResult;form.Close();}}}
     protected override void OnKeyDown(KeyEventArgs e){base.OnKeyDown(e);if(e.KeyCode==Keys.Space||e.KeyCode==Keys.Enter){PerformClick();e.Handled=true;}}
     protected override void OnPaintBackground(PaintEventArgs e){e.Graphics.Clear(Parent==null?SettingArt.Cream:Parent.BackColor);}
-    internal bool Chosen,IconOnly;internal string IconName;bool hover;
+    internal bool Chosen,IconOnly,HideCaption;internal string IconName;bool hover;
     internal SettingButton(){SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.ResizeRedraw|ControlStyles.Selectable,true);TabStop=true;AccessibleRole=AccessibleRole.PushButton;Cursor=Cursors.Hand;}
     protected override void OnMouseEnter(EventArgs e){hover=true;Invalidate();base.OnMouseEnter(e);}
     protected override void OnMouseLeave(EventArgs e){hover=false;Invalidate();base.OnMouseLeave(e);}
     protected override void OnPaint(PaintEventArgs e){var g=e.Graphics;g.Clear(Parent==null?SettingArt.Cream:Parent.BackColor);g.SmoothingMode=SmoothingMode.AntiAlias;g.TextRenderingHint=System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;using(var path=SettingArt.Round(new Rectangle(0,0,Width-1,Height-1),7))using(var fill=new SolidBrush(Chosen?SettingArt.Accent:hover?Color.FromArgb(250,235,204):Color.FromArgb(248,243,232)))g.FillPath(fill,path);
         if(IconName!=null)SettingArt.Icon(g,IconName,IconOnly?(Width-21)/2:10,(Height-21)/2);
-        if(!IconOnly)using(var brush=new SolidBrush(Enabled?SettingArt.Ink:SettingArt.Muted))using(var format=new StringFormat{Alignment=StringAlignment.Center,LineAlignment=StringAlignment.Center,Trimming=StringTrimming.EllipsisCharacter,FormatFlags=StringFormatFlags.NoWrap})g.DrawString(Text,Font,brush,new RectangleF(IconName==null?3:28,0,Width-(IconName==null?6:32),Height),format);
+        if(!IconOnly&&!HideCaption)using(var brush=new SolidBrush(Enabled?SettingArt.Ink:SettingArt.Muted))using(var format=new StringFormat{Alignment=StringAlignment.Center,LineAlignment=StringAlignment.Center,Trimming=StringTrimming.EllipsisCharacter,FormatFlags=StringFormatFlags.NoWrap})g.DrawString(Text,Font,brush,new RectangleF(IconName==null?3:28,0,Width-(IconName==null?6:32),Height),format);
         if(Focused&&ShowFocusCues)ControlPaint.DrawFocusRectangle(g,new Rectangle(3,3,Width-6,Height-6));
     }
 }
@@ -43,14 +43,16 @@ class SettingToggle : SettingButton {
 partial class Usagi {
     void PrepareSettingsMenu(){foreach(ToolStripItem item in new System.Collections.Generic.List<ToolStripItem>(MenuItems()))if(item is SizeChoiceItem||item==soundMenu||item==startupMenu||item==updateMenu||item==rapChangeMenu){menu.Items.Remove(item);if(item is SizeChoiceItem)item.Dispose();}settingsReady=true;}
     System.Collections.Generic.IEnumerable<ToolStripItem> MenuItems(){foreach(ToolStripItem item in menu.Items)yield return item;}
-    Form CreateSettingsForm(){var form=new Form{Text="우사기 설정",Font=menuFont,FormBorderStyle=FormBorderStyle.None,ShowInTaskbar=false,TopMost=true,StartPosition=FormStartPosition.Manual,ClientSize=new Size(420,Screen.AllScreens.Length>1?510:462),BackColor=SettingArt.Cream,ForeColor=SettingArt.Ink};
+    Form CreateSettingsForm(){var form=new Form{Text="먼작귀 펫 설정",Font=menuFont,FormBorderStyle=FormBorderStyle.None,ShowInTaskbar=false,TopMost=true,StartPosition=FormStartPosition.Manual,ClientSize=new Size(420,Screen.AllScreens.Length>1?510:462),BackColor=SettingArt.Cream,ForeColor=SettingArt.Ink};
         var anchor=new Point((int)Math.Round(x)+Width/2,(int)Math.Round(y+petTop)-5);var area=Screen.FromPoint(anchor).WorkingArea;
         form.Location=new Point(Math.Max(area.Left+4,Math.Min(area.Right-form.Width-4,anchor.X-form.Width/2)),Math.Max(area.Top+4,Math.Min(area.Bottom-form.Height-4,anchor.Y-form.Height)));
         int tail=Math.Max(24,Math.Min(form.Width-24,anchor.X-form.Left));using(var path=BubbleMenu.Outline(form.Width,form.Height,tail))form.Region=new Region(path);
         form.Paint+=(s,e)=>{var g=e.Graphics;g.SmoothingMode=System.Drawing.Drawing2D.SmoothingMode.AntiAlias;using(var path=BubbleMenu.Outline(form.Width,form.Height,tail))using(var pen=new Pen(Color.FromArgb(164,135,104),1.4f))g.DrawPath(pen,path);SettingArt.Icon(g,"settings",27,26);using(var line=new Pen(SettingArt.Line))g.DrawLine(line,26,310,394,310);};
         var titleFont=new Font(menuFont.FontFamily,15);var smallFont=new Font(menuFont.FontFamily,9);form.Disposed+=(s,e)=>{titleFont.Dispose();smallFont.Dispose();};
         Action<string,int,int,int,Font,Color> text=(value,left,top,width,font,color)=>form.Controls.Add(new Label{Text=value,Location=new Point(left,top),Size=new Size(width,24),Font=font,ForeColor=color,UseCompatibleTextRendering=true});
-        text("우사기 설정",56,23,280,titleFont,SettingArt.Ink);
+        text("먼작귀 펫",56,23,280,titleFont,SettingArt.Ink);
+        var characterSelect=new SettingButton{Text="캐릭터 · "+character.Name,Location=new Point(26,55),Size=new Size(230,30)};form.Controls.Add(characterSelect);characterSelect.Click+=(s,e)=>ShowCharacterPicker(form,false);
+        var addFriend=new SettingButton{Text="친구 추가",Location=new Point(266,55),Size=new Size(126,30)};form.Controls.Add(addFriend);addFriend.Click+=(s,e)=>ShowCharacterPicker(form,true);
         Action<string,string,int> label=(icon,value,top)=>{var row=new Label{Text=value,Location=new Point(26,top),Size=new Size(145,30),Padding=new Padding(30,4,0,0),UseCompatibleTextRendering=true};row.Paint+=(s,e)=>SettingArt.Icon(e.Graphics,icon,1,5);form.Controls.Add(row);};
         Func<string,int,int,int,SettingButton> button=(value,left,top,width)=>{var control=new SettingButton{Text=value,Location=new Point(left,top),Size=new Size(width,32)};form.Controls.Add(control);return control;};
         label("size","크기",92);var sizes=new[]{.75f,1f,1.4f};var names=new[]{"작게","보통","크게"};var sizeButtons=new SettingButton[3];Action refreshSizes=()=>{for(int i=0;i<3;i++){sizeButtons[i].Chosen=Math.Abs(scale-sizes[i])<.01;sizeButtons[i].Invalidate();}};
@@ -66,17 +68,17 @@ partial class Usagi {
         var about=new LinkLabel{Text="정보 보기",LinkColor=Color.Black,ActiveLinkColor=Color.Black,VisitedLinkColor=Color.Black,LinkBehavior=LinkBehavior.AlwaysUnderline,TextAlign=ContentAlignment.MiddleCenter,Location=new Point(160,form.Height-52),Size=new Size(100,24),UseCompatibleTextRendering=true};form.Controls.Add(about);about.LinkClicked+=(s,e)=>ShowSettingsInfo(form);
         if(Screen.AllScreens.Length>1){var monitor=button("이 화면에서 산책",108,400,204);monitor.IconName="monitor";monitor.Click+=(s,e)=>{var a=Screen.FromControl(form).WorkingArea;patrolScreen=Screen.FromControl(form);x=a.Left+a.Width/2-Width/2;y=a.Bottom-Height+8;Wake();SavePreferences();form.DialogResult=DialogResult.OK;form.Close();};}
         var close=button("닫기",360,22,32);close.IconName="close";close.IconOnly=true;close.AccessibleName="설정 닫기";close.DialogResult=DialogResult.Cancel;form.CancelButton=close;
-        var poll=new Timer{Interval=300};Action refresh=()=>{var endpoint=EndpointProbe.Read();sound.SetState(sounds.Enabled);soundHelp.Text=!sounds.Enabled?"지금은 조용히 산책해요":endpoint!=null&&endpoint.Headphones?"연결된 이어폰으로만 들려요":"이어폰을 연결하면 소리가 나요";if(startupMenu!=null){RefreshStartupMenu();startup.SetState(startupMenu.Text.EndsWith("켜짐"));}if(updateMenu!=null){update.Text=updateMenu.Text;update.Enabled=updateMenu.UpdateEnabled;checkedAt.Text=updateCheckStatus;}};
+        var poll=new Timer{Interval=300};Action refresh=()=>{characterSelect.Text="캐릭터 · "+character.Name;var endpoint=EndpointProbe.Read();sound.SetState(sounds.Enabled);soundHelp.Text=!sounds.Enabled?"지금은 조용히 산책해요":endpoint!=null&&endpoint.Headphones?"연결된 이어폰으로만 들려요":"이어폰을 연결하면 소리가 나요";if(startupMenu!=null){RefreshStartupMenu();startup.SetState(startupMenu.Text.EndsWith("켜짐"));}if(updateMenu!=null){update.Text=updateMenu.Text;update.Enabled=updateMenu.UpdateEnabled;checkedAt.Text=updateCheckStatus;}};
         poll.Tick+=(s,e)=>refresh();form.Shown+=(s,e)=>{refresh();poll.Start();};form.Disposed+=(s,e)=>poll.Dispose();return form;
     }
     void ShowSettingsInfo(Form form){
         if(form.Controls.ContainsKey("InfoPage"))return;
         var hidden=new System.Collections.Generic.List<Control>();
-        foreach(Control control in form.Controls)if(control.Top>=78&&control.Visible){hidden.Add(control);control.Visible=false;}
+        foreach(Control control in form.Controls)if(control.Top>=48){hidden.Add(control);control.Visible=false;}
         var page=new Panel{Name="InfoPage",Location=new Point(26,80),Size=new Size(368,form.Height-112),BackColor=SettingArt.Cream,AutoScroll=true};form.Controls.Add(page);page.BringToFront();
         var back=new SettingButton{Text="뒤로가기",IconName="back",IconOnly=true,AccessibleName="뒤로가기",Location=new Point(0,0),Size=new Size(32,32)};page.Controls.Add(back);
         back.Click+=(s,e)=>{form.Controls.Remove(page);page.Dispose();foreach(var control in hidden)control.Visible=true;foreach(var control in hidden)if(control is LinkLabel){control.Focus();break;}};
-        page.Controls.Add(new Label{Text="우사기 산책 펫",Location=new Point(0,46),Size=new Size(360,26),UseCompatibleTextRendering=true});
+        page.Controls.Add(new Label{Text="먼작귀 펫",Location=new Point(0,46),Size=new Size(360,26),UseCompatibleTextRendering=true});
         page.Controls.Add(new Label{Text="v"+PetUpdates.CurrentVersion.ToString(3)+" · 만든 사람 JHOO",Location=new Point(0,74),Size=new Size(360,24),ForeColor=SettingArt.Muted,UseCompatibleTextRendering=true});
         AddSettingsInfoLink(page,"포트폴리오","https://jhoo-diblisher.pages.dev/",108);
         AddSettingsInfoLink(page,"GitHub 저장소","https://github.com/JHOO2010/usagi-desktop-pet",142);

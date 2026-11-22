@@ -1,0 +1,28 @@
+﻿using System;
+using System.Drawing;
+using System.Reflection;
+using System.Windows.Forms;
+using System.IO;
+static class CharacterCheck {
+    static readonly BindingFlags flags=BindingFlags.NonPublic|BindingFlags.Instance;
+    static object Get(Usagi pet,string key){return typeof(Usagi).GetField(key,flags).GetValue(pet);}
+    static void Set(Usagi pet,string key,object value){typeof(Usagi).GetField(key,flags).SetValue(pet,value);}
+    static object Call(Usagi pet,string method,params object[] args){return typeof(Usagi).GetMethod(method,flags).Invoke(pet,args);}
+    static void Assert(bool pass,string message){if(!pass)throw new Exception(message);}
+    internal static void Run(){string[] keys={"usagi","chiikawa","hachiware","momonga","kurimanju","rakko","shisa"};using(var pet=new Usagi()){
+        ((PetSound)Get(pet,"sounds")).Enabled=false;var originals=new System.Collections.Generic.HashSet<Bitmap>();
+        foreach(string key in keys){Call(pet,"ApplyCharacter",key,false);Assert(((PetSound)Get(pet,"sounds")).CharacterKey==key,"Voice profile did not switch");var sprite=(Bitmap)Get(pet,"sprite");Assert(originals.Add(sprite),"Characters share the same standing sprite");
+            foreach(string group in new[]{"walk","leftWalk","poses","stumble","leftStumble","eating","held"})foreach(var frame in (Bitmap[])Get(pet,group))Assert(frame!=null&&frame.Width>30&&frame.Height>30,"Missing character motion frame: "+key+"/"+group);
+            Set(pet,"speechTime",0.0);using(var frame=(Bitmap)Call(pet,"DrawFrame"))Assert(frame.Width==480&&frame.Height==360,"Character canvas changed");
+            if(key!="usagi"){
+                var voice=RapTrack.Load(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"sounds","characters",key+"-voice.wav"));int peak=0;foreach(short sample in voice.Samples)peak=Math.Max(peak,Math.Abs((int)sample));Assert(voice.Duration>.4&&voice.Duration<5&&peak>300&&peak<16000,"Invalid character voice: "+key);
+                Call(pet,"BeginCharacterAction");Assert((double)Get(pet,"characterActionTime")>0,"Signature action missing: "+key);Call(pet,"UpdateCharacterAction",.7);using(var frame=(Bitmap)Call(pet,"DrawFrame")){}Call(pet,"UpdateCharacterAction",5.0);Assert((double)Get(pet,"characterActionTime")==0&&(double)Get(pet,"hopHeight")==0,"Signature did not finish: "+key);
+            }
+        }
+        Call(pet,"ApplyCharacter","invalid-character",false);Assert(((PetSound)Get(pet,"sounds")).CharacterKey=="usagi","Invalid saved character should fall back safely");
+        string path=Path.Combine(Path.GetTempPath(),"chiikawa-cast-"+Guid.NewGuid().ToString("N")+".txt");try{Set(pet,"preferencesPath",path);Set(pet,"preferencesEnabled",true);Call(pet,"ApplyCharacter","hachiware",false);Call(pet,"SavePreferences");Call(pet,"ApplyCharacter","shisa",false);Call(pet,"LoadPreferences");Assert(((PetSound)Get(pet,"sounds")).CharacterKey=="hachiware","Character choice not restored");}finally{Set(pet,"preferencesEnabled",false);if(File.Exists(path))File.Delete(path);}
+        using(var settings=(Form)Call(pet,"CreateSettingsForm")){settings.Show();Call(pet,"ShowCharacterPicker",settings,false);var page=settings.Controls["CharacterPage"];Assert(page!=null,"Character picker missing");int choices=0;foreach(Control control in page.Controls)if(control.AccessibleName!=null&&control.AccessibleName.EndsWith(" 선택"))choices++;Assert(choices==7,"Picker must contain seven characters");settings.Close();}
+        using(var settings=(Form)Call(pet,"CreateSettingsForm")){Call(pet,"ShowCharacterPicker",settings,true);settings.Show();Application.DoEvents();foreach(Control control in settings.Controls)if(control.Text.StartsWith("캐릭터 · "))Assert(!control.Visible,"Friend picker must hide base controls before showing");Assert(settings.Controls["CharacterPage"].Visible,"Friend picker not visible");settings.Close();}
+        foreach(string key in keys){Call(pet,"AddFriend",key);}var live=(System.Collections.Generic.List<Usagi>)typeof(Usagi).GetField("livePets",BindingFlags.NonPublic|BindingFlags.Static).GetValue(null);Assert(live.Count==7,"Seven friends were not created");foreach(var friend in live.ToArray()){var menu=(ContextMenuStrip)Get(friend,"menu");menu.Show(new Point(500,500));Application.DoEvents();Assert(menu.Visible,"Mixed character menu blocked");menu.Close();}Call(pet,"ClearClones");Call(pet,"ApplyCharacter","rakko",false);using(var frame=(Bitmap)Call(pet,"DrawFrame")){}Assert(live.Count==0,"Friend cleanup leaked pets");
+    }Console.WriteLine("PASS: seven distinct character packs, every motion, bounded voices, signature completion, persistence, picker, mixed friend menus and safe shared art cleanup.");}
+}

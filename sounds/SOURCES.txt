@@ -36,3 +36,20 @@ PCM 16bit mono 44100Hz, 음량 정리와 양 끝 페이드. 개인 음원은 앱
 푸루야 재생 보정: 기존 0.2초 파일 대신 원본 발성을 보존해 약 1.4초로 복원했습니다.
 앞 80ms와 뒤 여유를 두고, 피크를 제한해 재생기 전체 50% 음량 설정을 유지합니다.
 walk-purya.wav 역시 전체 발성을 유지한 낮은 음량 버전입니다.
+
+
+먼작귀 펫 v2.0.0 캐릭터별 짧은 음성
+아래 음성은 원작 장면의 짧은 발췌입니다. 합성/보이스 클로닝이 아닙니다.
+chiikawa-voice.wav: https://www.myinstants.com/en/instant/chiikawa-yada-9237/
+원본 https://www.myinstants.com/media/sounds/chiikawa-yada_rNEshQa.mp3 (약 2.4초)
+hachiware-voice.wav: https://www.myinstants.com/en/instant/hachiware-oi-6090/
+원본 https://www.myinstants.com/media/sounds/hachiware-oi_FYOX2Q7.mp3 (약 1.9초)
+momonga-voice.wav: https://www.myinstants.com/en/instant/momonga-silly-noise-42242/
+원본 https://www.myinstants.com/media/sounds/momonga-silly-noise.mp3 (약 3.6초)
+kurimanju-voice.wav: https://www.youtube.com/watch?v=xMmivZxVM30 (약 0:07.9~0:10.7)
+rakko-voice.wav: https://www.youtube.com/watch?v=L4QaEgKdHsY (약 0:03.1~0:05.6)
+shisa-voice.wav: https://www.youtube.com/watch?v=4Z92hDpokJg (약 0:02.25~0:05.25)
+PCM 16bit mono 44100Hz. 저역/고역·음량 정리, 짧은 페이드와 재생 앞뒤 여유.
+YouTube 장면 발췌에는 기본 스펙트럼 잡음 저감(afftdn)을 적용했으며 배경 음악 완전 분리를 의미하지 않습니다.
+재생기는 전체 50% 음량을 유지하고 산책 음성은 추가로 낮춥니다. 이어폰/헤드셋 전용.
+수면 소리는 기존의 공용 카툰 수면 효과음이며 캐릭터 성우의 수면 음성이 아닙니다.

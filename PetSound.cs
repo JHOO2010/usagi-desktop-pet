@@ -10,10 +10,11 @@ interface IPetAudioPosition {double? PositionSeconds {get;}}
 interface IPetAudio : IDisposable {void Play(short[] samples,uint device);void Stop();bool Done {get;}}
 class PetSound : IDisposable {
     readonly Func<AudioEndpoint> probe;readonly IPetAudio output;string playingDevice,playingEffect;double poll;
-    public bool Enabled=true;
+    public bool Enabled=true;internal string CharacterKey="usagi";
     public PetSound():this(EndpointProbe.Read,new WaveAudio()){}
     internal PetSound(Func<AudioEndpoint> source,IPetAudio backend){probe=source;output=backend;}
-    public bool Play(string effect){try{return PlaySamples(effect,LoadClip(effect));}catch{return false;}}
+    public bool Play(string effect){try{return PlaySamples(effect,LoadCharacterClip(effect));}catch{return false;}}
+    short[] LoadCharacterClip(string effect){if(CharacterKey=="usagi"||effect=="sleep")return LoadClip(effect);string file=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"sounds","characters",CharacterKey+"-voice.wav");string key=CharacterKey+"/"+effect;short[] samples;if(clips.TryGetValue(key,out samples))return samples;if(!File.Exists(file))return new short[0];samples=RapTrack.Load(file).Samples;if(effect.StartsWith("walk")){var quiet=new short[samples.Length];for(int i=0;i<samples.Length;i++)quiet[i]=(short)(samples[i]*.35);samples=quiet;}clips[key]=samples;return samples;}
     bool PlaySamples(string effect,short[] samples){if(!Enabled||samples==null||samples.Length==0)return false;if(playingEffect=="rap"&&playingDevice!=null&&!output.Done&&effect!="rap")return false;try{var device=probe();if(device==null||!device.Headphones||device.WaveId==uint.MaxValue)return false;var quiet=new short[samples.Length];for(int i=0;i<samples.Length;i++)quiet[i]=(short)(samples[i]*.5);output.Stop();output.Play(quiet,device.WaveId);if(output.Done){playingDevice=null;playingEffect=null;return false;}playingDevice=device.Id;playingEffect=effect;poll=0;return true;}catch{output.Stop();playingDevice=null;playingEffect=null;return false;}}
     public bool PlayRap(short[] samples){return samples!=null&&samples.Length<=44100*90&&PlaySamples("rap",samples);}
     public bool RapPlaying {get{return playingEffect=="rap"&&playingDevice!=null&&!output.Done;}}

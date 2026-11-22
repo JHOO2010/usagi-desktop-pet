@@ -56,6 +56,6 @@ partial class Usagi {
     void StartAnimation(){RefreshFrameRate(true);lastTick=frameClock.Elapsed.TotalSeconds;if(frameTicket==null)frameTicket=FramePump.Register(this,TickPet,targetFrameRate);}
     void StopAnimation(){if(frameTicket!=null){frameTicket.Dispose();frameTicket=null;}}
     void RefreshFrameRate(bool force){PatrolArea();double now=frameClock.Elapsed.TotalSeconds;string device=patrolScreen.DeviceName;if(!force&&device==frameDevice&&now<refreshRateCheck)return;
-        targetFrameRate=DisplayRefresh.Read(device);frameDevice=device;refreshRateCheck=now+2;if(frameTicket!=null)frameTicket.SetRate(targetFrameRate);if(tray!=null)tray.Text="우사기 · 화면 맞춤 "+targetFrameRate+"Hz · 1번 폴짝 / 2번 하트";
+        targetFrameRate=DisplayRefresh.Read(device);frameDevice=device;refreshRateCheck=now+2;if(frameTicket!=null)frameTicket.SetRate(targetFrameRate);if(tray!=null)tray.Text="먼작귀 펫 · "+character.Name+" · "+targetFrameRate+"Hz · 1번 폴짝 / 2번 하트";
     }
 }

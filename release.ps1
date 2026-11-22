@@ -27,7 +27,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Tag creation failed.' }
     git push origin "v$Version"
     if ($LASTEXITCODE -ne 0) { throw 'Tag push failed.' }
-    gh release create "v$Version" "output/UsagiPet-Setup-$Version.exe" "output/UsagiPet-Setup-$Version.exe.sha256" "output/update.json" --draft --verify-tag --title "우사기 산책 펫 v$Version" --notes-file $NotesFile
+    gh release create "v$Version" "output/UsagiPet-Setup-$Version.exe" "output/UsagiPet-Setup-$Version.exe.sha256" "output/update.json" --draft --verify-tag --title "먼작귀 펫 v$Version" --notes-file $NotesFile
     if ($LASTEXITCODE -ne 0) { throw 'Release upload failed. The pushed tag and draft remain for retry.' }
     gh release edit "v$Version" --draft=false --latest
     if ($LASTEXITCODE -ne 0) { throw 'Release publish failed. The draft remains for retry.' }

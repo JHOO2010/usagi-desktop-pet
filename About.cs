@@ -25,7 +25,7 @@ class UpdateStatusItem : ToolStripItem {
 
 partial class Usagi {
     bool infoOpen;
-    void ShowPetInfo(){using(var dialog=new Form{Text="우사기 정보",FormBorderStyle=FormBorderStyle.None,StartPosition=FormStartPosition.Manual,ClientSize=new Size(390,380),BackColor=Color.FromArgb(255,253,241),ForeColor=Color.FromArgb(89,57,34),ShowInTaskbar=false,TopMost=true})
+    void ShowPetInfo(){using(var dialog=new Form{Text="먼작귀 펫 정보",FormBorderStyle=FormBorderStyle.None,StartPosition=FormStartPosition.Manual,ClientSize=new Size(390,380),BackColor=Color.FromArgb(255,253,241),ForeColor=Color.FromArgb(89,57,34),ShowInTaskbar=false,TopMost=true})
         using(var body=new Font(menuFont.FontFamily,10f))using(var title=new Font(menuFont.FontFamily,15f)){
         var anchor=new Point((int)Math.Round(x)+Width/2,(int)Math.Round(y+petTop)-5);
         var area=Screen.FromPoint(anchor).WorkingArea;
@@ -34,7 +34,7 @@ partial class Usagi {
         int tail=Math.Max(24,Math.Min(dialog.Width-24,anchor.X-dialog.Left));
         dialog.Font=body;using(var outline=BubbleMenu.Outline(dialog.Width,dialog.Height,tail))dialog.Region=new Region(outline);
         dialog.Paint+=(s,e)=>{e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;using(var outline=BubbleMenu.Outline(dialog.Width,dialog.Height,tail))using(var pen=new Pen(dialog.ForeColor,2))e.Graphics.DrawPath(pen,outline);};
-        dialog.Controls.Add(new Label{Text="우사기 산책 펫",Font=title,Location=new Point(24,22),Size=new Size(340,35)});
+        dialog.Controls.Add(new Label{Text="먼작귀 펫",Font=title,Location=new Point(24,22),Size=new Size(340,35)});
         dialog.Controls.Add(new Label{Text="v"+PetUpdates.CurrentVersion.ToString(3)+" · 만든 사람 JHOO",Location=new Point(26,65),Size=new Size(340,25)});
         AddInfoLink(dialog,"포트폴리오 ↗","https://jhoo-diblisher.pages.dev/",105);
         AddInfoLink(dialog,"GitHub 저장소 ↗","https://github.com/JHOO2010/usagi-desktop-pet",140);
