@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using System.IO;
 
@@ -14,7 +14,7 @@ class PetSound : IDisposable {
     public PetSound():this(EndpointProbe.Read,new WaveAudio()){}
     internal PetSound(Func<AudioEndpoint> source,IPetAudio backend){probe=source;output=backend;}
     public bool Play(string effect){try{return PlaySamples(effect,LoadCharacterClip(effect),2);}catch{return false;}}
-    short[] LoadCharacterClip(string effect){if(CharacterKey=="usagi"||effect=="sleep")return LoadClip(effect);string file=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"sounds","characters",CharacterKey+"-voice.wav");string key=CharacterKey+"/"+effect;short[] samples;if(clips.TryGetValue(key,out samples))return samples;if(!File.Exists(file))return new short[0];samples=RapTrack.Load(file).Samples;if(effect.StartsWith("walk")){var quiet=new short[samples.Length];for(int i=0;i<samples.Length;i++)quiet[i]=(short)(samples[i]*.35);samples=quiet;}clips[key]=samples;return samples;}
+    short[] LoadCharacterClip(string effect){if(CharacterKey=="usagi")return LoadClip(effect);string relative=CharacterSoundCues.RelativePath(CharacterKey,effect);if(relative==null)return new short[0];string key="cue/"+relative;short[] samples;if(clips.TryGetValue(key,out samples))return samples;string file=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,relative.Replace('/',Path.DirectorySeparatorChar));if(!File.Exists(file))return new short[0];return LoadPcmFile(key,file);}
     bool Active {get{return playingDevice!=null&&!output.Done;}}
     bool PlaySamples(string effect,short[] samples,int requestedPriority){if(!Enabled||samples==null||samples.Length==0)return false;lock(voiceLock){try{
         var device=probe();if(device==null||!device.Headphones||device.WaveId==uint.MaxValue)return false;
@@ -37,6 +37,9 @@ class PetSound : IDisposable {
     internal static short[] LoadClip(string effect){short[] cached;if(clips.TryGetValue(effect,out cached))return cached;
         string name=effect=="hop"?"ura.wav":effect=="heart"?"purya.wav":effect=="burst"?"yaha.wav":effect=="walk_ura"?"walk-ura.wav":effect=="walk_purya"?"walk-purya.wav":effect=="sleep"?"sleep.wav":null;if(name==null)return new short[0];
         string path=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"sounds",name);if(!File.Exists(path))return new short[0];
+        return LoadPcmFile(effect,path);
+    }
+    static short[] LoadPcmFile(string effect,string path){short[] cached;if(clips.TryGetValue(effect,out cached))return cached;
         using(var stream=File.OpenRead(path))using(var reader=new BinaryReader(stream)){
             if(new string(reader.ReadChars(4))!="RIFF")return new short[0];reader.ReadUInt32();if(new string(reader.ReadChars(4))!="WAVE")return new short[0];bool format=false;
             while(stream.Position+8<=stream.Length){string chunk=new string(reader.ReadChars(4));uint size=reader.ReadUInt32();long next=stream.Position+size+(size%2);if(next>stream.Length)break;

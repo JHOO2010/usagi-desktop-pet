@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Reflection;
 using System.Windows.Forms;
@@ -10,10 +10,11 @@ static class CharacterCheck {
     static object Call(Usagi pet,string method,params object[] args){return typeof(Usagi).GetMethod(method,flags).Invoke(pet,args);}
     static void Assert(bool pass,string message){if(!pass)throw new Exception(message);}
     internal static void Run(){string[] keys={"usagi","chiikawa","hachiware","momonga","kurimanju","rakko","shisa"};using(var pet=new Usagi()){
+        var landmarks=(System.Collections.IDictionary)typeof(Usagi).GetField("faceLandmarks",BindingFlags.NonPublic|BindingFlags.Static).GetValue(null);Assert(landmarks.Count==216,"All 216 character frames need reviewed face endpoints");
         ((PetSound)Get(pet,"sounds")).Enabled=false;var originals=new System.Collections.Generic.HashSet<Bitmap>();
         foreach(string key in keys){Call(pet,"ApplyCharacter",key,false);Assert(((PetSound)Get(pet,"sounds")).CharacterKey==key,"Voice profile did not switch");var sprite=(Bitmap)Get(pet,"sprite");Assert(originals.Add(sprite),"Characters share the same standing sprite");
             foreach(string group in new[]{"walk","leftWalk","poses","stumble","leftStumble","eating","held"})foreach(var frame in (Bitmap[])Get(pet,group))Assert(frame!=null&&frame.Width>30&&frame.Height>30,"Missing character motion frame: "+key+"/"+group);
-            Set(pet,"speechTime",0.0);Set(pet,"moving",false);var moodField=typeof(Usagi).GetField("mood",flags);moodField.SetValue(pet,Enum.Parse(moodField.FieldType,"Walk"));using(var frame=(Bitmap)Call(pet,"DrawFrame")){Assert(frame.Width==480&&frame.Height==360,"Character canvas changed");if(key!="usagi"){var measure=typeof(Usagi).GetMethod("MeasureBody",BindingFlags.NonPublic|BindingFlags.Static);object body=measure.Invoke(null,new object[]{frame,true});float head=(float)body.GetType().GetField("FaceWidth",flags).GetValue(body);var usagiArt=typeof(Usagi).GetMethod("GetCharacterArt",BindingFlags.NonPublic|BindingFlags.Static).Invoke(null,new object[]{"usagi"});float expected=(float)usagiArt.GetType().GetField("HeadUnits",flags).GetValue(usagiArt);Assert(Math.Abs(head-expected)<2.5,"Rendered head size differs from Usagi: "+key+" = "+head+" expected "+expected);object alpha=measure.Invoke(null,new object[]{frame,false});Rectangle bounds=(Rectangle)alpha.GetType().GetField("Bounds",flags).GetValue(alpha);Assert(Math.Abs(bounds.Bottom-350)<2,"Feet baseline shifted: "+key);}}
+            Set(pet,"speechTime",0.0);Set(pet,"moving",false);var moodField=typeof(Usagi).GetField("mood",flags);moodField.SetValue(pet,Enum.Parse(moodField.FieldType,"Walk"));using(var frame=(Bitmap)Call(pet,"DrawFrame")){Assert(frame.Width==480&&frame.Height==360,"Character canvas changed");if(key!="usagi"){var measure=typeof(Usagi).GetMethod("MeasureBody",BindingFlags.NonPublic|BindingFlags.Static);object alpha=measure.Invoke(null,new object[]{frame,false});Rectangle bounds=(Rectangle)alpha.GetType().GetField("Bounds",flags).GetValue(alpha);Assert(Math.Abs(bounds.Bottom-350)<2,"Feet baseline shifted: "+key);}}
             if(key!="usagi"){
                 var art=Get(pet,"characterArt");var artType=art.GetType();Assert((bool)artType.GetField("HasActionStrips",flags).GetValue(art),"Legacy atlas still active: "+key);
                 foreach(string group in new[]{"Walk","SitFrames","SleepFrames","StretchFrames","JumpFrames","Special"}){var frames=(Bitmap[])artType.GetField(group,flags).GetValue(art);Assert(frames.Length==4,"Action must contain four frames");foreach(var motion in frames)Assert(motion!=null&&motion.Width>30,"Incomplete action: "+key+"/"+group);}

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Globalization;
@@ -11,7 +11,7 @@ partial class Usagi {
     class Track {public double X,Y,Age;public float Scale;public int Side;}
     readonly System.Collections.Generic.List<Track> tracks=new System.Collections.Generic.List<Track>();
     double trackDistance,tripCooldown=18,strokeTime,strokeCooldown,gazeTilt,wiggleTime,lastWiggle,saveIn=10,foodX;
-    int wiggleDirection;bool foodActive;string morningSeen="";
+    int footstepSide,wiggleDirection;bool foodActive;string morningSeen="";
     string preferencesPath=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"UsagiPet","settings.txt");
     bool preferencesEnabled=Path.GetFileName(Application.ExecutablePath)=="우사기.exe";
     bool SaveEnabled {get{return preferencesEnabled;}}
@@ -55,7 +55,7 @@ partial class Usagi {
         if(PerformingRap||scatterActive||pointerDown||dragging||paused||menu.Visible||foodActive||mood==Mood.Hop||mood==Mood.Fall||mood==Mood.Sleep||mood==Mood.Drowsy||mood==Mood.Trip||mood==Mood.Recover)return;
         double travel=Math.Sqrt(mx*mx+my*my);
         bool head=Math.Abs(dx)<40*scale&&localY>petTop+30*scale&&localY<Height-43*scale;
-        if(head&&travel>.2&&travel<Math.Max(4,dt*1100)&&strokeCooldown<=0){strokeTime+=dt;if(strokeTime>.5){strokeTime=0;strokeCooldown=4;speed=0;Change(Mood.Nuzzle);EmitHearts(false);Say("후웅~");}}
+        if(head&&travel>.2&&travel<Math.Max(4,dt*1100)&&strokeCooldown<=0){strokeTime+=dt;if(strokeTime>.5){strokeTime=0;strokeCooldown=4;speed=0;Change(Mood.Nuzzle);if(character.Key!="usagi")sounds.Play("heart");EmitHearts(false);Say("후웅~");}}
         else strokeTime=Math.Max(0,strokeTime-dt*.6);
         if(mood==Mood.Nuzzle)return;
         if(near&&travel>1){int sign=mx>0?1:mx<0?-1:0;if(sign!=0&&sign!=wiggleDirection){wiggleDirection=sign;if(t-lastWiggle<.65)wiggleTime+=.5;else wiggleTime=.5;lastWiggle=t;}
@@ -66,16 +66,16 @@ partial class Usagi {
         if(UpdateCharacterAction(dt))return true;if(UpdateRap(dt))return true;
         if(UpdateScatter(dt))return true;
         if(foodActive&&mood!=Mood.Eat){idleTime=0;double distance=foodX-(x+Width/2);direction=distance<0?-1:1;targetSpeed=38+74*Math.Min(1,Math.Abs(distance)/(90*scale));decisionTime=100;autoHopIn=100;
-            if(Math.Abs(distance)<19*scale&&ClaimFood()){speed=0;moving=false;Change(Mood.Eat);Say("푸루루루~");}}
+            if(Math.Abs(distance)<19*scale&&ClaimFood()){speed=0;moving=false;Change(Mood.Eat);if(character.Key!="usagi")sounds.Play("eat");Say("푸루루루~");}}
         if(mood==Mood.Eat){idleTime=0;moving=false;speed=0;if(stateTime>=5.3){FinishFood();EmitHearts(false);Say("야하!");Change(Mood.Look);}return true;}
         if(mood==Mood.Nuzzle){idleTime=0;moving=false;speed=0;if(stateTime>1.8){Change(Mood.Look);decisionTime=2;}return true;}
         if(mood==Mood.Trip){moving=false;speed=0;MoveStumble(dt);if(stateTime>.72){Change(Mood.Recover);AutoSay("…하아?");}return true;}
         if(mood==Mood.Recover){moving=false;if(stateTime>1.35){Change(Mood.Walk);targetSpeed=50;decisionTime=2;}return true;}
         return false;
     }
-    void BeginTrip(){SurpriseNeighbors();stumbleVelocity=direction*Math.Max(35,Math.Min(115,speed));CancelSocial();speed=0;tripCooldown=18+rng.NextDouble()*17;Change(Mood.Trip);speechTime=0;}
+    void BeginTrip(){SurpriseNeighbors();stumbleVelocity=direction*Math.Max(35,Math.Min(115,speed));CancelSocial();speed=0;tripCooldown=18+rng.NextDouble()*17;Change(Mood.Trip);if(character.Key!="usagi")sounds.PlayAmbient("trip");speechTime=0;}
     void LeaveTracks(double distance){trackDistance+=distance;if(trackDistance<11*scale)return;trackDistance=0;
-        tracks.Add(new Track{X=x+Width/2-direction*12*scale,Y=y+Height-10,Scale=scale,Side=tracks.Count%2});if(tracks.Count>24)tracks.RemoveAt(0);
+        footstepSide^=1;if(character.Key!="usagi"&&!isClone)sounds.PlayAmbient(footstepSide==0?"walk_ura":"walk_purya");tracks.Add(new Track{X=x+Width/2-direction*12*scale,Y=y+Height-10,Scale=scale,Side=footstepSide});if(tracks.Count>24)tracks.RemoveAt(0);
     }
     void DrawHopWind(Graphics g,float bottom){if(mood!=Mood.Hop||stateTime>.43||hopHeight<2)return;
         for(int i=0;i<3;i++){double u=(stateTime-i*.035)/.34;if(u<=0||u>=1)continue;float fade=(float)Math.Sin(u*Math.PI);int alpha=(int)(165*fade);float side=i-1,startX=Width/2+side*11*scale,startY=bottom+3*scale;float length=(float)(8+u*11)*scale;

@@ -79,3 +79,21 @@ shisa-voice.wav: https://stickershop.line-scdn.net/stickershop/v1/sticker/898125
 여러 화자가 섞인 장면에 필터를 적용해 음성을 분리했다고 주장하지 않습니다. 공개 미리듣기의 원래 효과음이 포함될 수 있습니다.
 음성 합성·보이스 클로닝을 사용하지 않았습니다. 앱 전체 50% 음량과 단일 음성 채널을 유지합니다.
 캐릭터·음성의 권리는 각 권리자에게 있으며 공개 접근이 재배포 허락을 의미하지 않습니다.
+
+v2.1.1 상황별 연결 / 2026-11-23
+캐릭터 음성 한 개를 모든 동작에 사용하던 방식을 제거했습니다. 정확한 전체 연결표는 SoundCues.cs에 있습니다.
+sounds/actions/*.wav: scripts/generate_action_sfx.py로 직접 만든 비음성 카툰 효과음입니다. 보이스 합성/변조가 아닙니다.
+점프, 부드러운 하트, 하트 폭발, 좌우 발소리, 숨소리 분위기, 먹기, 넘어짐, 옷 스침, 인사, 활공, 잔, 검, 서빙은 각각 다른 음원입니다.
+원작 반응은 다음 상황에만 연결합니다 (LINE 공개 미리듣기 출처는 위 상품 페이지):
+chiikawa-heart.wav: 898125159 (기존 공개 미리듣기)
+chiikawa-eat.wav: https://stickershop.line-scdn.net/stickershop/v1/sticker/898125137/android/sticker_sound.m4a?v=1
+chiikawa-held.wav: https://stickershop.line-scdn.net/stickershop/v1/sticker/898125150/android/sticker_sound.m4a?v=1
+hachiware-hop.wav: 위 Myinstants Oi 단일 발성 구간
+momonga-heart.wav: https://stickershop.line-scdn.net/stickershop/v1/sticker/898125146/android/sticker_sound.m4a?v=1
+momonga-held.wav: 898125139 (기존 공개 미리듣기)
+kurimanju-sleep.wav: https://stickershop.line-scdn.net/stickershop/v1/sticker/898125158/android/sticker_sound.m4a?v=1
+kurimanju 특유 한 모금: 898125147 (기존 공개 미리듣기)
+rakko-trip.wav: 898125154 (기존 공개 미리듣기)
+shisa-held.wav: 898125138 (기존 공개 미리듣기)
+추가 미리듣기는 발성 전체 유지, loudnorm I=-25 TP=-9 LRA=7, 앞 15ms 페이드, 앞 60ms·뒤 100ms 여유, PCM16 mono 44100Hz.
+공개 미리듣기의 원래 카툰 효과음은 포함될 수 있습니다. 이전에 받아둔 다른 사운드보드/영상 후보는 이번 상황별 팩에 추가하지 않았습니다.

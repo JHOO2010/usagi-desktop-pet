@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -37,10 +37,10 @@ partial class Usagi {
                 var frames=new Bitmap[30];for(int i=0;i<30;i++){int col=i%6,row=i/6;var rect=Rectangle.FromLTRB(col*atlas.Width/6,row*atlas.Height/5,(col+1)*atlas.Width/6,(row+1)*atlas.Height/5);using(var cell=atlas.Clone(rect,PixelFormat.Format32bppArgb))frames[i]=CropCharacterCell(cell);}
                 Sprite=frames[0];Array.Copy(frames,1,Walk,0,4);Array.Copy(frames,5,Poses,0,4);Array.Copy(frames,9,Stumble,0,6);Array.Copy(frames,15,Eating,0,6);Array.Copy(frames,21,Held,0,6);Array.Copy(frames,27,Special,0,3);
             }
-            // Match actual head width to Usagi; ears, tail, mane and body height do not set scale.
-            var reference=MeasureBody(Sprite,true);float core=StandingBodyHeight(Sprite,reference,key=="momonga");float baseHead=key=="usagi"?MeasureHeadWidth(Sprite):68*reference.FaceWidth/GetCharacterArt("usagi").HeadUnits;BodyUnits=core*68/baseHead;HeadUnits=reference.FaceWidth*68/baseHead;
-            Heads[Sprite]=key=="usagi"?baseHead:DisplayHeadScale(Sprite,GetCharacterArt("usagi").HeadUnits);Centers[Sprite]=key=="usagi"?Sprite.Width/2f:reference.Center;
-            foreach(var group in new[]{Walk,Poses,Stumble,Eating,Held,Special,SitFrames,SleepFrames,StretchFrames,JumpFrames})foreach(var frame in group)if(frame!=null&&!Heads.ContainsKey(frame)){var shape=MeasureBody(frame,true);Heads[frame]=key=="usagi"?MeasureHeadWidth(frame):DisplayHeadScale(frame,GetCharacterArt("usagi").HeadUnits);Centers[frame]=key=="usagi"?frame.Width/2f:shape.Center;}
+            // Explicitly reviewed face contour endpoints; no pale-pixel or largest-region size estimate.
+            var reference=MeasureBody(Sprite,true);float core=StandingBodyHeight(Sprite,reference,key=="momonga");float baseHead=key=="usagi"?MeasureHeadWidth(Sprite):MeasuredFace(Sprite).Width;BodyUnits=core*68/baseHead;HeadUnits=68;
+            Heads[Sprite]=baseHead;Centers[Sprite]=key=="usagi"?Sprite.Width/2f:MeasuredFace(Sprite).Center;
+            foreach(var group in new[]{Walk,Poses,Stumble,Eating,Held,Special,SitFrames,SleepFrames,StretchFrames,JumpFrames})foreach(var frame in group)if(frame!=null&&!Heads.ContainsKey(frame)){Heads[frame]=key=="usagi"?MeasureHeadWidth(frame):MeasuredFace(frame).Width;Centers[frame]=key=="usagi"?frame.Width/2f:MeasuredFace(frame).Center;}
             for(int i=0;i<4;i++){LeftWalk[i]=new Bitmap(Walk[i]);LeftWalk[i].RotateFlip(RotateFlipType.RotateNoneFlipX);Heads[LeftWalk[i]]=Heads[Walk[i]];Centers[LeftWalk[i]]=Walk[i].Width-Centers[Walk[i]];}
             for(int i=0;i<6;i++){LeftStumble[i]=new Bitmap(Stumble[i]);LeftStumble[i].RotateFlip(RotateFlipType.RotateNoneFlipX);Heads[LeftStumble[i]]=Heads[Stumble[i]];Centers[LeftStumble[i]]=Stumble[i].Width-Centers[Stumble[i]];}
         }
@@ -50,7 +50,7 @@ partial class Usagi {
     static readonly Dictionary<string,CharacterArt> characterCache=new Dictionary<string,CharacterArt>();
     static readonly string[] actionNames={"walk","sit","sleep","stretch","jump","eat","stumble","held","special"};
     static bool CompleteActionPack(string folder){foreach(string action in actionNames)if(!File.Exists(Path.Combine(folder,action+".png")))return false;return true;}
-    static void LoadActionStrip(string path,Bitmap[] frames){using(var strip=new Bitmap(path))for(int i=0;i<4;i++){var bounds=Rectangle.FromLTRB(i*strip.Width/4,0,(i+1)*strip.Width/4,strip.Height);using(var cell=strip.Clone(bounds,PixelFormat.Format32bppArgb))frames[i]=CropCharacterCell(cell);}}
+    static void LoadActionStrip(string path,Bitmap[] frames){using(var strip=new Bitmap(path))for(int i=0;i<4;i++){var bounds=Rectangle.FromLTRB(i*strip.Width/4,0,(i+1)*strip.Width/4,strip.Height);using(var cell=strip.Clone(bounds,PixelFormat.Format32bppArgb))frames[i]=CropCharacterCell(cell);RegisterFaceLandmark(path,i,frames[i]);}}
     static CharacterArt GetCharacterArt(string key){CharacterArt art;if(!characterCache.TryGetValue(key,out art)){art=new CharacterArt(key);characterCache.Add(key,art);}return art;}
     static CharacterDef FindCharacter(string key){foreach(var candidate in characters)if(candidate.Key==key)return candidate;return characters[0];}
     void ApplyCharacter(string key,bool react){var next=FindCharacter(key);var art=GetCharacterArt(next.Key);if(react){LeaveRap();LeaveFoodRace();CancelSocial();scatterActive=false;hopHeight=0;speed=0;Change(Mood.Look);}

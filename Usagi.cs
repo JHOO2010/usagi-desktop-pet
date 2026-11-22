@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -127,7 +127,7 @@ partial class Usagi : Form {
     void Pet(){LeaveRap();CancelSocial();idleTime=0;heartTime=0;EmitHearts(false);sounds.Play("heart");Say("푸루야!");}
     void BeginPointer(System.Drawing.Point point){characterActionTime=0;LeaveRap();LeaveFoodRace();heldTime=0;if(mood==Mood.Sleep||mood==Mood.Drowsy)Wake();CancelSocial();scatterActive=false;foodActive=false;pointerDown=true;dragging=false;dragStart=point;pressX=x;pressY=y;idleTime=0;}
     void MovePointer(System.Drawing.Point point){if(!pointerDown)return;double dx=point.X-dragStart.X,dy=point.Y-dragStart.Y;
-        if(!dragging&&(Math.Abs(dx)>=Math.Max(6,SystemInformation.DragSize.Width/2)||Math.Abs(dy)>=Math.Max(6,SystemInformation.DragSize.Height/2))){dragging=true;paused=false;pendingClicks=0;speed=0;hopHeight=0;Change(Mood.Dragged);}
+        if(!dragging&&(Math.Abs(dx)>=Math.Max(6,SystemInformation.DragSize.Width/2)||Math.Abs(dy)>=Math.Max(6,SystemInformation.DragSize.Height/2))){dragging=true;paused=false;pendingClicks=0;speed=0;hopHeight=0;Change(Mood.Dragged);if(character.Key!="usagi")sounds.Play("held");}
         if(dragging){patrolScreen=Screen.FromPoint(point);x=pressX+dx;y=pressY+dy;}
     }
     void EndPointer(double now,System.Drawing.Point point){if(!pointerDown)return;MovePointer(point);bool moved=dragging;pointerDown=false;dragging=false;idleTime=0;
@@ -182,7 +182,7 @@ partial class Usagi : Form {
         double oldX=x;if(mood==Mood.Walk){speed+=(targetSpeed*character.Pace-speed)*(1-Math.Exp(-dt/(settling.HasValue?.14:.38)));x+=direction*speed*dt;if(settling.HasValue&&speed<1){var rest=settling.Value;speed=0;Change(rest);}}else if(mood==Mood.Turn)x+=direction*speed*dt;
         double distance=Math.Abs(x-oldX);moving=distance>.01&&(mood==Mood.Walk||mood==Mood.Turn);if(moving){walkDistance+=distance;LeaveTracks(distance);}WrapPatrol(area);
         if(!edgeTransit&&moving&&speed>48&&!foodActive&&tripCooldown<=0){BeginTrip();}
-        if(moving&&mood==Mood.Walk&&!settling.HasValue){autoHopIn-=dt;walkSoundIn-=dt;if(autoHopIn<=0){AutonomousHop();}else if(walkSoundIn<=0&&!isClone){bool ura=rng.Next(2)==0;if(sounds.PlayAmbient(ura?"walk_ura":"walk_purya"))AutoSay(ura?"우라!":"푸루야!");walkSoundIn=5+rng.NextDouble()*7;}}
+        if(moving&&mood==Mood.Walk&&!settling.HasValue){autoHopIn-=dt;walkSoundIn-=dt;if(autoHopIn<=0){AutonomousHop();}else if(walkSoundIn<=0&&!isClone&&character.Key=="usagi"){bool ura=rng.Next(2)==0;if(sounds.PlayAmbient(ura?"walk_ura":"walk_purya"))AutoSay(ura?"우라!":"푸루야!");walkSoundIn=5+rng.NextDouble()*7;}}
         if(nextSpeechTime<=0&&!dragging&&mood!=Mood.Drowsy)Speak();
     }
     Bitmap DrawFrame(){var frame=new Bitmap(Width,Height,PixelFormat.Format32bppArgb);DrawIntoFrame(frame);return frame;}

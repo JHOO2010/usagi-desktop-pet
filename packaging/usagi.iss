@@ -1,5 +1,5 @@
 #ifndef AppRelease
-#define AppRelease "2.1.0"
+#define AppRelease "2.1.1"
 #endif
 [Setup]
 AppId={{55757449-1D38-42D2-A5FA-2C4EAE3A3462}
@@ -46,7 +46,10 @@ Source: "..\fonts\*.ttf"; DestDir: "{app}\fonts"; Flags: ignoreversion
 Source: "..\fonts\OFL.txt"; DestDir: "{app}\fonts"; Flags: ignoreversion
 
 Source: "..\characters\*.png"; DestDir: "{app}\characters"; Excludes: "chiikawa.png,hachiware.png,momonga.png,kurimanju.png,rakko.png,shisa.png"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\characters\face-landmarks.tsv"; DestDir: "{app}\characters"; Flags: ignoreversion
 Source: "..\sounds\characters\*.wav"; DestDir: "{app}\sounds\characters"; Flags: ignoreversion
+Source: "..\sounds\actions\*.wav"; DestDir: "{app}\sounds\actions"; Flags: ignoreversion
+Source: "..\sounds\reactions\*.wav"; DestDir: "{app}\sounds\reactions"; Flags: ignoreversion
 
 Source: "..\release-notes\v{#AppRelease}.md"; DestDir: "{app}"; DestName: "release-notes.md"; Flags: ignoreversion
 

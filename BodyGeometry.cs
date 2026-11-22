@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Collections.Generic;
@@ -24,8 +24,6 @@ partial class Usagi {
     }
     static Bitmap CropCharacterCell(Bitmap cell){var body=MeasureBody(cell,false);var cropped=cell.Clone(body.Bounds,PixelFormat.Format32bppArgb);int largest=Math.Max(cropped.Width,cropped.Height);if(largest<=256)return cropped;float factor=256f/largest;var result=new Bitmap(Math.Max(1,(int)Math.Round(cropped.Width*factor)),Math.Max(1,(int)Math.Round(cropped.Height*factor)),PixelFormat.Format32bppArgb);using(var g=Graphics.FromImage(result)){g.Clear(Color.Transparent);g.InterpolationMode=System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;g.DrawImage(cropped,0,0,result.Width,result.Height);}cropped.Dispose();return result;}
     static float StandingBodyHeight(Bitmap image,BodyGeometry face,bool omitBlueTail){var tops=new List<int>();int half=Math.Max(2,(int)(face.FaceWidth*.1)),center=(int)face.Center;var bits=image.LockBits(new Rectangle(0,0,image.Width,image.Height),ImageLockMode.ReadOnly,PixelFormat.Format32bppArgb);try{var row=new byte[image.Width*4];var found=new bool[image.Width];for(int y=0;y<image.Height;y++){System.Runtime.InteropServices.Marshal.Copy(IntPtr.Add(bits.Scan0,y*bits.Stride),row,0,row.Length);for(int x=Math.Max(0,center-half);x<Math.Min(image.Width,center+half);x++){int p=x*4;if(!found[x]&&row[p+3]>180&&(!omitBlueTail||row[p+2]>=220&&row[p+1]>=195)){found[x]=true;tops.Add(y);}}}}finally{image.UnlockBits(bits);}if(tops.Count==0)return face.CoreHeight;tops.Sort();return image.Height-tops[tops.Count/2];}
-    // Calibrate at actual display resolution too: fur, scars and outlines can split pale regions after sampling.
-    static float DisplayHeadScale(Bitmap pose,float target){float factor=target/MeasureBody(pose,true).FaceWidth;for(int pass=0;pass<2;pass++){int w=Math.Max(1,(int)Math.Ceiling(pose.Width*factor)),h=Math.Max(1,(int)Math.Ceiling(pose.Height*factor));using(var sample=new Bitmap(w,h))using(var g=Graphics.FromImage(sample)){g.InterpolationMode=System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;g.DrawImage(pose,0,0,pose.Width*factor,pose.Height*factor);float measured=MeasureBody(sample,true).FaceWidth;if(Math.Abs(measured-target)<=1)break;factor*=target/measured;}}return 68/factor;}
     float PoseLeft(Bitmap pose,float renderedWidth){float center;return characterArt.Centers.TryGetValue(pose,out center)?-center*renderedWidth/pose.Width:-renderedWidth/2;}
     void DrawAlignedPose(Graphics g,Bitmap pose,float width,float height){g.DrawImage(pose,PoseLeft(pose,width),-height,width,height);}
 }
