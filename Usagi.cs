@@ -201,10 +201,11 @@ partial class Usagi : Form {
         if(mood==Mood.Drowsy)angle=(float)Math.Sin(stateTime*4)*5;
         if(mood==Mood.Dragged){pose=held[HeldFrame(heldTime)];angle=(float)Math.Sin(heldTime*(heldTime<2.5?10:3))*(heldTime<2.5?2.5f:.7f);}
         if(mood==Mood.Fall||scatterActive)pose=poses[3];
+        if(characterArt.HasActionStrips){if(mood==Mood.Look)pose=sprite;else if(mood==Mood.Sit)pose=characterArt.SitFrames[stateTime<.4?Math.Min(3,(int)(stateTime/.1)):t%4.5<.12?3:2];else if(mood==Mood.Drowsy)pose=characterArt.SitFrames[3];else if(mood==Mood.Sleep)pose=characterArt.SleepFrames[(int)(t*.8)%4];else if(mood==Mood.Stretch)pose=characterArt.StretchFrames[Math.Min(3,(int)(stateTime/Math.Max(.1,stretchDuration)*4))];else if(mood==Mood.Hop)pose=characterArt.JumpFrames[stateTime<.1?0:hopVelocity>0?1:hopHeight>10?2:3];}
         float factor=68*scale/headWidths[pose];if(scatterActive){double appear=Math.Min(1,scatterTime/.16);factor*=(float)(.4+.6*(1-Math.Pow(1-appear,3)));angle=(float)(scatterVX/32*Math.Sin(Math.Min(1,scatterTime)*Math.PI));}
         float h=pose.Height*factor,width=pose.Width*factor,bottom=Height-10-bob-(float)hopHeight;
         float squash=landing>0?(float)Math.Sin(landing/.26*Math.PI)*.1f:0;
-        if(!paused&&mood==Mood.Sleep){h+=(float)Math.Sin(t*2.2)*1.2f;}
+        if(!paused&&mood==Mood.Sleep&&!characterArt.HasActionStrips){h+=(float)Math.Sin(t*2.2)*1.2f;}
         if(mood==Mood.Nuzzle){pose=poses[1];factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;angle=(float)Math.Sin(t*5)*2;}
         if(mood==Mood.Eat){int a,b;float mix;EatingFrames(stateTime,out a,out b,out mix);pose=eating[a];factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;bob=(float)ChewPulse(stateTime)*.65f*scale;bottom-=bob;angle=stateTime<.65?(float)Math.Sin(stateTime/.65*Math.PI)*3:((float)ChewPulse(stateTime)-.5f)*.65f;}
         if(mood==Mood.Trip||mood==Mood.Recover){int a,b;float mix;StumbleFrames(mood==Mood.Recover,stateTime,out a,out b,out mix);pose=(direction>0?stumble:leftStumble)[a];factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;angle=0;squash=0;}

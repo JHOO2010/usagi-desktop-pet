@@ -10,7 +10,7 @@ using System.Threading;
 using System.Web.Script.Serialization;
 
 class PetRelease {
-    public Version Version;public string Tag,Filename,DownloadUrl,ChecksumUrl,Digest;public long Size;
+    public Version Version;public string Tag,Filename,DownloadUrl,ChecksumUrl,Digest,Notes;public long Size;
 }
 static class PetUpdates {
     internal const string Repo="JHOO2010/usagi-desktop-pet";
@@ -32,7 +32,7 @@ static class PetUpdates {
             if(name==filename){download=url;size=Convert.ToInt64(asset["size"],CultureInfo.InvariantCulture);if(asset.ContainsKey("digest"))digest=asset["digest"] as string;}else checksum=url;
         }
         if(download==null||checksum==null||size<1024||size>104857600)throw new InvalidDataException("Installer or checksum missing.");
-        return new PetRelease{Version=version,Tag=tag,Filename=filename,DownloadUrl=download,ChecksumUrl=checksum,Size=size,Digest=digest};
+        return new PetRelease{Version=version,Tag=tag,Filename=filename,DownloadUrl=download,ChecksumUrl=checksum,Size=size,Digest=digest,Notes=root.ContainsKey("body")?Convert.ToString(root["body"],CultureInfo.InvariantCulture):""};
     }
     static bool TrustedHost(Uri uri){return uri.Scheme=="https"&&(uri.Host=="api.github.com"||uri.Host=="github.com"||uri.Host=="release-assets.githubusercontent.com"||uri.Host=="objects.githubusercontent.com");}
     static void ReadUrl(string url,Stream target,long limit,CancellationToken token,Action<int> progress){

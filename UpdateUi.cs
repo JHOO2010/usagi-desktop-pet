@@ -11,7 +11,7 @@ partial class Usagi {
     DateTime lastUpdateCheck=DateTime.MinValue;string updateCheckStatus="아직 확인하지 않았어요";
     void CheckUpdatesFromMenu(){if(isClone||!SaveEnabled)return;if(!updateBusy&&downloadedUpdate==null&&(DateTime.UtcNow-lastUpdateCheck).TotalSeconds>=60)CheckUpdates();RefreshSettingsBadge();}
     void RefreshSettingsBadge(){if(settingsMenu==null)return;settingsMenu.Text=downloadedUpdate!=null?"설정 · 업데이트 설치":availableUpdate!=null?"설정 · 새 업데이트":updateBusy?"설정 · 업데이트 확인 중":"설정…";}
-    void StartUpdates(){if(isClone||!SaveEnabled)return;updateCancel=new CancellationTokenSource();
+    void StartUpdates(){if(isClone||!SaveEnabled)return;ScheduleReleaseNotes();updateCancel=new CancellationTokenSource();
         string result=Path.Combine(PetUpdates.CacheDirectory,"update-result.txt");try{if(File.Exists(result)){if(File.ReadAllText(result).StartsWith("ERROR")){updateMenu.Text="업데이트 다시 확인";updateMenu.ToolTipText="설치를 완료하지 못했어요. 다시 확인해 주세요.";}File.Delete(result);}}catch(IOException){}catch(UnauthorizedAccessException){}
         updatePoll=new Timer{Interval=12000};updatePoll.Tick+=(s,e)=>{updatePoll.Interval=14400000;CheckUpdates();};updatePoll.Start();
     }

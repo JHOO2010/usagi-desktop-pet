@@ -1,4 +1,4 @@
-﻿우사기 음성 소스 / 2026-11-20
+우사기 음성 소스 / 2026-11-20
 
 공개 사운드보드에 Chiikawa Usagi로 표시된 사용자 업로드 클립입니다.
 공식 배포 음원으로 확인된 것은 아닙니다. 음성 합성은 하지 않았습니다.
@@ -38,6 +38,7 @@ PCM 16bit mono 44100Hz, 음량 정리와 양 끝 페이드. 개인 음원은 앱
 walk-purya.wav 역시 전체 발성을 유지한 낮은 음량 버전입니다.
 
 
+이하 v2.0.0 / v2.0.1 기록은 이전 음원의 이력이며, v2.1.0에서는 교체했습니다.
 먼작귀 펫 v2.0.0 캐릭터별 짧은 음성
 아래 음성은 원작 장면의 짧은 발췌입니다. 합성/보이스 클로닝이 아닙니다.
 chiikawa-voice.wav: https://www.myinstants.com/en/instant/chiikawa-yada-9237/
@@ -61,3 +62,20 @@ v2.0.1 단발 음성 정리
 쿠리만쥬 0:00.04~0:00.85 / 랏코 0:00.0~0:01.05 / 시사 0:00.35~0:00.95
 긴 대사·반복 구간 대신 짧은 반응용 발췌를 사용합니다. 원본 장면의 배경음이 완전히 제거되었다는 의미는 아닙니다.
 앱 전체 공용 음성 채널로 동시 재생 및 같은 소리 재시작을 막습니다.
+
+
+v2.1.0 현재 사용 음원 / 2026-11-22
+우사기 음원은 변경하지 않았습니다. 다른 캐릭터의 기존 영상 장면 발췌는 사용하지 않습니다.
+치이카와·모몽가·쿠리만쥬·랏코·시사: LINE 공식 스티커 상품 페이지에서 공개 재생되는 단독 캐릭터 미리듣기.
+상품 페이지: https://store.line.me/stickershop/product/37825/ja
+공개 미리듣기만 사용했으며 유료 스티커 패키지를 다운로드하거나 인증을 우회하지 않았습니다.
+chiikawa-voice.wav: https://stickershop.line-scdn.net/stickershop/v1/sticker/898125159/android/sticker_sound.m4a?v=1
+momonga-voice.wav: https://stickershop.line-scdn.net/stickershop/v1/sticker/898125139/android/sticker_sound.m4a?v=1
+kurimanju-voice.wav: https://stickershop.line-scdn.net/stickershop/v1/sticker/898125147/android/sticker_sound.m4a?v=1
+rakko-voice.wav: https://stickershop.line-scdn.net/stickershop/v1/sticker/898125154/android/sticker_sound.m4a?v=1
+shisa-voice.wav: https://stickershop.line-scdn.net/stickershop/v1/sticker/898125138/android/sticker_sound.m4a?v=1
+하치와레: 위 Myinstants Oi 원본의 0.95~1.75초 단일 발성 구간.
+가공: 원래 발성 유지, loudnorm I=-23 TP=-9 LRA=7, 앞 15ms 페이드, 앞 90ms·뒤 120ms 여유, PCM 16bit mono 44100Hz.
+여러 화자가 섞인 장면에 필터를 적용해 음성을 분리했다고 주장하지 않습니다. 공개 미리듣기의 원래 효과음이 포함될 수 있습니다.
+음성 합성·보이스 클로닝을 사용하지 않았습니다. 앱 전체 50% 음량과 단일 음성 채널을 유지합니다.
+캐릭터·음성의 권리는 각 권리자에게 있으며 공개 접근이 재배포 허락을 의미하지 않습니다.

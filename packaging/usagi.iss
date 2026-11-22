@@ -1,5 +1,5 @@
-﻿#ifndef AppRelease
-#define AppRelease "2.0.1"
+#ifndef AppRelease
+#define AppRelease "2.1.0"
 #endif
 [Setup]
 AppId={{55757449-1D38-42D2-A5FA-2C4EAE3A3462}
@@ -45,14 +45,17 @@ Source: "설치후_사용법.txt"; DestDir: "{app}"; DestName: "사용법.txt"; 
 Source: "..\fonts\*.ttf"; DestDir: "{app}\fonts"; Flags: ignoreversion
 Source: "..\fonts\OFL.txt"; DestDir: "{app}\fonts"; Flags: ignoreversion
 
-Source: "..\characters\*.png"; DestDir: "{app}\characters"; Flags: ignoreversion
+Source: "..\characters\*.png"; DestDir: "{app}\characters"; Excludes: "chiikawa.png,hachiware.png,momonga.png,kurimanju.png,rakko.png,shisa.png"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\sounds\characters\*.wav"; DestDir: "{app}\sounds\characters"; Flags: ignoreversion
+
+Source: "..\release-notes\v{#AppRelease}.md"; DestDir: "{app}"; DestName: "release-notes.md"; Flags: ignoreversion
 
 [InstallDelete]
 Type: files; Name: "{userprograms}\우사기 산책 펫\우사기 산책 펫.lnk"
 Type: files; Name: "{userprograms}\우사기 산책 펫\사용법.lnk"
 Type: dirifempty; Name: "{userprograms}\우사기 산책 펫"
 Type: files; Name: "{autodesktop}\우사기 산책 펫.lnk"
+
 
 [Icons]
 Name: "{group}\먼작귀 펫"; Filename: "{app}\우사기.exe"; WorkingDir: "{app}"

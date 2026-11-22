@@ -21,20 +21,26 @@ partial class Usagi {
     };
     CharacterDef character=characters[0];CharacterArt characterArt;double characterActionTime,characterActionIn=25;
     sealed class CharacterArt {
-        internal Bitmap Sprite;internal Bitmap[] Walk=new Bitmap[4],LeftWalk=new Bitmap[4],Poses=new Bitmap[4],Stumble=new Bitmap[6],LeftStumble=new Bitmap[6],Eating=new Bitmap[6],Held=new Bitmap[6],Special=new Bitmap[3];
-        internal readonly Dictionary<Bitmap,float> Heads=new Dictionary<Bitmap,float>(),Centers=new Dictionary<Bitmap,float>();internal float BodyUnits;
+        internal Bitmap Sprite;internal Bitmap[] Walk=new Bitmap[4],LeftWalk=new Bitmap[4],Poses=new Bitmap[4],Stumble=new Bitmap[6],LeftStumble=new Bitmap[6],Eating=new Bitmap[6],Held=new Bitmap[6],Special=new Bitmap[4],SitFrames=new Bitmap[4],SleepFrames=new Bitmap[4],StretchFrames=new Bitmap[4],JumpFrames=new Bitmap[4];internal bool HasActionStrips;
+        internal readonly Dictionary<Bitmap,float> Heads=new Dictionary<Bitmap,float>(),Centers=new Dictionary<Bitmap,float>();internal float BodyUnits,HeadUnits;
         internal CharacterArt(string key){string root=AppDomain.CurrentDomain.BaseDirectory;
             if(key=="usagi"){
                 using(var source=new Bitmap(Path.Combine(root,"usagi.png")))Sprite=Crop(source);
                 LoadSheet(Path.Combine(root,"walk.png"),Walk);LoadSheet(Path.Combine(root,"poses.png"),Poses);LoadSheet(Path.Combine(root,"stumble.png"),Stumble);LoadSheet(Path.Combine(root,"eating.png"),Eating);LoadSheet(Path.Combine(root,"held.png"),Held);
+            }else if(CompleteActionPack(Path.Combine(root,"characters",key))){
+                string folder=Path.Combine(root,"characters",key);LoadActionStrip(Path.Combine(folder,"walk.png"),Walk);LoadActionStrip(Path.Combine(folder,"sit.png"),SitFrames);LoadActionStrip(Path.Combine(folder,"sleep.png"),SleepFrames);LoadActionStrip(Path.Combine(folder,"stretch.png"),StretchFrames);LoadActionStrip(Path.Combine(folder,"jump.png"),JumpFrames);LoadActionStrip(Path.Combine(folder,"special.png"),Special);
+                Sprite=SitFrames[0];Poses[0]=SitFrames[2];Poses[1]=SleepFrames[0];Poses[2]=StretchFrames[2];Poses[3]=JumpFrames[2];
+                var fall=new Bitmap[4];LoadActionStrip(Path.Combine(folder,"stumble.png"),fall);int[] fallMap={0,1,2,2,3,3};for(int i=0;i<6;i++)Stumble[i]=fall[fallMap[i]];Stumble[5]=Sprite;
+                var eat=new Bitmap[4];LoadActionStrip(Path.Combine(folder,"eat.png"),eat);int[] eatMap={0,0,1,2,3,3};for(int i=0;i<6;i++)Eating[i]=eat[eatMap[i]];
+                var hold=new Bitmap[4];LoadActionStrip(Path.Combine(folder,"held.png"),hold);int[] holdMap={0,0,1,2,2,3};for(int i=0;i<6;i++)Held[i]=hold[holdMap[i]];HasActionStrips=true;
             }else using(var atlas=new Bitmap(Path.Combine(root,"characters",key+".png"))){
                 var frames=new Bitmap[30];for(int i=0;i<30;i++){int col=i%6,row=i/6;var rect=Rectangle.FromLTRB(col*atlas.Width/6,row*atlas.Height/5,(col+1)*atlas.Width/6,(row+1)*atlas.Height/5);using(var cell=atlas.Clone(rect,PixelFormat.Format32bppArgb))frames[i]=CropCharacterCell(cell);}
                 Sprite=frames[0];Array.Copy(frames,1,Walk,0,4);Array.Copy(frames,5,Poses,0,4);Array.Copy(frames,9,Stumble,0,6);Array.Copy(frames,15,Eating,0,6);Array.Copy(frames,21,Held,0,6);Array.Copy(frames,27,Special,0,3);
             }
-            // 76 logical pixels matches the original Usagi body, excluding its ears.
-            var reference=MeasureBody(Sprite,true);float core=StandingBodyHeight(Sprite,reference,key=="momonga");float baseHead=key=="usagi"?MeasureHeadWidth(Sprite):68*core/GetCharacterArt("usagi").BodyUnits;BodyUnits=key=="usagi"?76:core*68/baseHead;
-            Heads[Sprite]=baseHead;Centers[Sprite]=key=="usagi"?Sprite.Width/2f:reference.Center;
-            foreach(var group in new[]{Walk,Poses,Stumble,Eating,Held,Special})foreach(var frame in group)if(frame!=null){var shape=MeasureBody(frame,true);Heads[frame]=key=="usagi"?MeasureHeadWidth(frame):baseHead*shape.FaceWidth/reference.FaceWidth;Centers[frame]=key=="usagi"?frame.Width/2f:shape.Center;}
+            // Match actual head width to Usagi; ears, tail, mane and body height do not set scale.
+            var reference=MeasureBody(Sprite,true);float core=StandingBodyHeight(Sprite,reference,key=="momonga");float baseHead=key=="usagi"?MeasureHeadWidth(Sprite):68*reference.FaceWidth/GetCharacterArt("usagi").HeadUnits;BodyUnits=core*68/baseHead;HeadUnits=reference.FaceWidth*68/baseHead;
+            Heads[Sprite]=key=="usagi"?baseHead:DisplayHeadScale(Sprite,GetCharacterArt("usagi").HeadUnits);Centers[Sprite]=key=="usagi"?Sprite.Width/2f:reference.Center;
+            foreach(var group in new[]{Walk,Poses,Stumble,Eating,Held,Special,SitFrames,SleepFrames,StretchFrames,JumpFrames})foreach(var frame in group)if(frame!=null&&!Heads.ContainsKey(frame)){var shape=MeasureBody(frame,true);Heads[frame]=key=="usagi"?MeasureHeadWidth(frame):DisplayHeadScale(frame,GetCharacterArt("usagi").HeadUnits);Centers[frame]=key=="usagi"?frame.Width/2f:shape.Center;}
             for(int i=0;i<4;i++){LeftWalk[i]=new Bitmap(Walk[i]);LeftWalk[i].RotateFlip(RotateFlipType.RotateNoneFlipX);Heads[LeftWalk[i]]=Heads[Walk[i]];Centers[LeftWalk[i]]=Walk[i].Width-Centers[Walk[i]];}
             for(int i=0;i<6;i++){LeftStumble[i]=new Bitmap(Stumble[i]);LeftStumble[i].RotateFlip(RotateFlipType.RotateNoneFlipX);Heads[LeftStumble[i]]=Heads[Stumble[i]];Centers[LeftStumble[i]]=Stumble[i].Width-Centers[Stumble[i]];}
         }
@@ -42,6 +48,9 @@ partial class Usagi {
     // Seven immutable packs are shared by every friend, including after switching.
     // They remain valid until process exit; closing one friend never frees another's art.
     static readonly Dictionary<string,CharacterArt> characterCache=new Dictionary<string,CharacterArt>();
+    static readonly string[] actionNames={"walk","sit","sleep","stretch","jump","eat","stumble","held","special"};
+    static bool CompleteActionPack(string folder){foreach(string action in actionNames)if(!File.Exists(Path.Combine(folder,action+".png")))return false;return true;}
+    static void LoadActionStrip(string path,Bitmap[] frames){using(var strip=new Bitmap(path))for(int i=0;i<4;i++){var bounds=Rectangle.FromLTRB(i*strip.Width/4,0,(i+1)*strip.Width/4,strip.Height);using(var cell=strip.Clone(bounds,PixelFormat.Format32bppArgb))frames[i]=CropCharacterCell(cell);}}
     static CharacterArt GetCharacterArt(string key){CharacterArt art;if(!characterCache.TryGetValue(key,out art)){art=new CharacterArt(key);characterCache.Add(key,art);}return art;}
     static CharacterDef FindCharacter(string key){foreach(var candidate in characters)if(candidate.Key==key)return candidate;return characters[0];}
     void ApplyCharacter(string key,bool react){var next=FindCharacter(key);var art=GetCharacterArt(next.Key);if(react){LeaveRap();LeaveFoodRace();CancelSocial();scatterActive=false;hopHeight=0;speed=0;Change(Mood.Look);}
@@ -58,7 +67,7 @@ partial class Usagi {
         if(character.Key=="momonga"){double u=Math.Max(0,Math.Min(1,(characterActionTime-.2)/2.1)),glide=Math.Sin(u*Math.PI);hopHeight=Math.Pow(glide,1.6)*27;var area=PatrolArea();x=Math.Max(area.Left-Width/2+45*scale,Math.Min(area.Right-Width/2-45*scale,x+direction*60*glide*dt));}
         double duration=character.Key=="kurimanju"?4:2.5;if(characterActionTime>=duration){characterActionTime=0;hopHeight=0;Change(Mood.Look);decisionTime=1;}return true;
     }
-    Bitmap CharacterActionPose(){double duration=character.Key=="kurimanju"?4:2.5;double u=characterActionTime/duration;int frame=u<.25?0:u<.75?1:2;return characterArt.Special[frame]??sprite;}
+    Bitmap CharacterActionPose(){double duration=character.Key=="kurimanju"?4:2.5;double u=characterActionTime/duration;int frame=characterArt.HasActionStrips?(u<.18?0:u<.38?1:u<.78?2:3):(u<.25?0:u<.75?1:2);return characterArt.Special[frame]??sprite;}
     void CharacterActionMotion(out float angle,out float bob,out float squash){double seconds=characterActionTime,duration=character.Key=="kurimanju"?4:2.5,u=Math.Min(1,seconds/duration),envelope=Math.Sin(u*Math.PI);angle=0;bob=0;squash=0;
         if(character.Key=="chiikawa"){angle=(float)(Math.Sin(seconds*2.6)*envelope*2.5);}
         else if(character.Key=="hachiware"){angle=(float)(Math.Sin(seconds*4.8)*envelope*3);bob=(float)(Math.Abs(Math.Sin(seconds*4.8))*envelope*1.5);}

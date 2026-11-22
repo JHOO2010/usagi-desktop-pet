@@ -62,7 +62,7 @@ partial class Usagi {
         label("startup","시작 시 실행",204);var startup=new SettingToggle{Location=new Point(320,202),Size=new Size(72,32),Enabled=!isClone,AccessibleName="Windows 시작 시 실행"};form.Controls.Add(startup);startup.Click+=(s,e)=>startupMenu.PerformClick();
         text(isClone?"시작앱은 원본 우사기에서 설정해요":"Windows에 로그인하면 함께 나와요",56,234,330,smallFont,SettingArt.Muted);
         label("music","랩 음원",263);button("음원 바꾸기…",222,260,170).Click+=(s,e)=>ChooseRapFile(false);
-        label("update","업데이트",330);text("v"+PetUpdates.CurrentVersion.ToString(3),56,365,130,smallFont,SettingArt.Muted);
+        label("update","업데이트",330);var changes=new LinkLabel{Text="변경 내용",Location=new Point(56,365),Size=new Size(132,24),Font=smallFont,LinkColor=SettingArt.Ink,ActiveLinkColor=Color.Black,UseCompatibleTextRendering=true};form.Controls.Add(changes);changes.LinkClicked+=(s,e)=>ShowReleaseNotesPage(form,availableUpdate==null?"v"+PetUpdates.CurrentVersion.ToString(3):availableUpdate.Tag,availableUpdate==null?CurrentReleaseNotes():availableUpdate.Notes);
         var checkedAt=new Label{Location=new Point(192,369),Size=new Size(204,22),Font=smallFont,ForeColor=SettingArt.Muted,UseCompatibleTextRendering=true};form.Controls.Add(checkedAt);
         var update=button("업데이트 확인",192,330,200);update.Enabled=!isClone;if(isClone)update.Text="원본에서 업데이트";update.Click+=(s,e)=>UpdateAction();
         var about=new LinkLabel{Text="정보 보기",LinkColor=Color.Black,ActiveLinkColor=Color.Black,VisitedLinkColor=Color.Black,LinkBehavior=LinkBehavior.AlwaysUnderline,TextAlign=ContentAlignment.MiddleCenter,Location=new Point(160,form.Height-52),Size=new Size(100,24),UseCompatibleTextRendering=true};form.Controls.Add(about);about.LinkClicked+=(s,e)=>ShowSettingsInfo(form);

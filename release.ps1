@@ -16,7 +16,7 @@ try {
     $filename = "UsagiPet-Setup-$Version.exe"
     $installerHash = (Get-FileHash -LiteralPath "output/$filename" -Algorithm SHA256).Hash.ToLowerInvariant()
     $assetBase = "https://github.com/JHOO2010/usagi-desktop-pet/releases/download/v$Version/"
-    $manifest = @{ tag_name="v$Version"; draft=$false; prerelease=$false; assets=@(
+    $manifest = @{ tag_name="v$Version"; body=(Get-Content -LiteralPath $NotesFile -Raw -Encoding UTF8); draft=$false; prerelease=$false; assets=@(
         @{ name=$filename; state='uploaded'; size=(Get-Item -LiteralPath "output/$filename").Length; digest="sha256:$installerHash"; browser_download_url="$assetBase$filename" },
         @{ name="$filename.sha256"; state='uploaded'; browser_download_url="$assetBase$filename.sha256" }
     ) } | ConvertTo-Json -Depth 5
