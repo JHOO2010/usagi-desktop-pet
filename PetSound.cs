@@ -10,23 +10,29 @@ interface IPetAudioPosition {double? PositionSeconds {get;}}
 interface IPetAudio : IDisposable {void Play(short[] samples,uint device);void Stop();bool Done {get;}}
 class PetSound : IDisposable {
     readonly Func<AudioEndpoint> probe;readonly IPetAudio output;string playingDevice,playingEffect;double poll;
-    public bool Enabled=true;internal string CharacterKey="usagi";
+    public bool Enabled=true;internal string CharacterKey="usagi";static readonly object voiceLock=new object();static PetSound voiceOwner;int priority;
     public PetSound():this(EndpointProbe.Read,new WaveAudio()){}
     internal PetSound(Func<AudioEndpoint> source,IPetAudio backend){probe=source;output=backend;}
-    public bool Play(string effect){try{return PlaySamples(effect,LoadCharacterClip(effect));}catch{return false;}}
+    public bool Play(string effect){try{return PlaySamples(effect,LoadCharacterClip(effect),2);}catch{return false;}}
     short[] LoadCharacterClip(string effect){if(CharacterKey=="usagi"||effect=="sleep")return LoadClip(effect);string file=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"sounds","characters",CharacterKey+"-voice.wav");string key=CharacterKey+"/"+effect;short[] samples;if(clips.TryGetValue(key,out samples))return samples;if(!File.Exists(file))return new short[0];samples=RapTrack.Load(file).Samples;if(effect.StartsWith("walk")){var quiet=new short[samples.Length];for(int i=0;i<samples.Length;i++)quiet[i]=(short)(samples[i]*.35);samples=quiet;}clips[key]=samples;return samples;}
-    bool PlaySamples(string effect,short[] samples){if(!Enabled||samples==null||samples.Length==0)return false;if(playingEffect=="rap"&&playingDevice!=null&&!output.Done&&effect!="rap")return false;try{var device=probe();if(device==null||!device.Headphones||device.WaveId==uint.MaxValue)return false;var quiet=new short[samples.Length];for(int i=0;i<samples.Length;i++)quiet[i]=(short)(samples[i]*.5);output.Stop();output.Play(quiet,device.WaveId);if(output.Done){playingDevice=null;playingEffect=null;return false;}playingDevice=device.Id;playingEffect=effect;poll=0;return true;}catch{output.Stop();playingDevice=null;playingEffect=null;return false;}}
-    public bool PlayRap(short[] samples){return samples!=null&&samples.Length<=44100*90&&PlaySamples("rap",samples);}
-    public bool RapPlaying {get{return playingEffect=="rap"&&playingDevice!=null&&!output.Done;}}
+    bool Active {get{return playingDevice!=null&&!output.Done;}}
+    bool PlaySamples(string effect,short[] samples,int requestedPriority){if(!Enabled||samples==null||samples.Length==0)return false;lock(voiceLock){try{
+        var device=probe();if(device==null||!device.Headphones||device.WaveId==uint.MaxValue)return false;
+        if(voiceOwner!=null&&!voiceOwner.Active)voiceOwner.StopAll();
+        if(voiceOwner!=null){if(requestedPriority==1||voiceOwner.priority>requestedPriority)return false;if(voiceOwner.playingEffect==effect&&voiceOwner.CharacterKey==CharacterKey)return false;voiceOwner.StopAll();}
+        var quiet=new short[samples.Length];for(int i=0;i<samples.Length;i++)quiet[i]=(short)(samples[i]*.5);output.Stop();output.Play(quiet,device.WaveId);if(output.Done){playingDevice=null;playingEffect=null;return false;}playingDevice=device.Id;playingEffect=effect;priority=requestedPriority;voiceOwner=this;poll=0;return true;
+    }catch{StopAll();return false;}}}
+    public bool PlayRap(short[] samples){return samples!=null&&samples.Length<=44100*90&&PlaySamples("rap",samples,3);}
+    public bool RapPlaying {get{return playingEffect=="rap"&&Active;}}
     public double? RapPosition {get{var position=output as IPetAudioPosition;return RapPlaying&&position!=null?position.PositionSeconds:null;}}
-    public void StopAll(){output.Stop();playingDevice=null;playingEffect=null;}
+    public void StopAll(){lock(voiceLock){output.Stop();playingDevice=null;playingEffect=null;priority=0;if(voiceOwner==this)voiceOwner=null;}}
     public void StopRap(){if(playingEffect=="rap")StopAll();}
-    public bool PlayAmbient(string effect){if(playingDevice!=null&&!output.Done)return false;return Play(effect);}
-    public void StopSleep(){if(playingEffect!="sleep")return;output.Stop();playingDevice=null;playingEffect=null;}
+    public bool PlayAmbient(string effect){try{return PlaySamples(effect,LoadCharacterClip(effect),1);}catch{return false;}}
+    public void StopSleep(){if(playingEffect=="sleep")StopAll();}
     public void Tick(double dt){if(playingDevice==null)return;poll-=dt;if(poll>0)return;poll=.06;
-        try{var device=probe();if(!Enabled||device==null||!device.Headphones||device.Id!=playingDevice||output.Done){output.Stop();playingDevice=null;}}catch{output.Stop();playingDevice=null;}
+        try{var device=probe();if(!Enabled||device==null||!device.Headphones||device.Id!=playingDevice||output.Done)StopAll();}catch{StopAll();}
     }
-    public void Dispose(){output.Dispose();}
+    public void Dispose(){StopAll();output.Dispose();}
     static readonly System.Collections.Generic.Dictionary<string,short[]> clips=new System.Collections.Generic.Dictionary<string,short[]>();
     internal static short[] LoadClip(string effect){short[] cached;if(clips.TryGetValue(effect,out cached))return cached;
         string name=effect=="hop"?"ura.wav":effect=="heart"?"purya.wav":effect=="burst"?"yaha.wav":effect=="walk_ura"?"walk-ura.wav":effect=="walk_purya"?"walk-purya.wav":effect=="sleep"?"sleep.wav":null;if(name==null)return new short[0];

@@ -147,7 +147,7 @@ partial class Usagi : Form {
             hearts.Add(new Heart{Age=burst?-rng.NextDouble()*.065:-i*.09,Life=burst?.95+rng.NextDouble()*.4:1.05+rng.NextDouble()*.25,Angle=angle,Radius=burst?80+rng.NextDouble()*66:40+rng.NextDouble()*28,BaseSize=burst?10+rng.NextDouble()*10:12+rng.NextDouble()*5,Rotation=(rng.NextDouble()-.5)*65,WorldX=x+Width/2,WorldY=y+Height-55*scale-hopHeight,Scale=scale,Color=i%3==0?Color.FromArgb(245,155,176):i%3==1?Color.FromArgb(231,94,131):Color.FromArgb(250,119,146)});
         }while(hearts.Count>88)hearts.RemoveAt(0);
     }
-    void StartHop(){if(paused)return;characterActionTime=0;LeaveRap();LeaveFoodRace();CancelSocial();scatterActive=false;foodActive=false;idleTime=0;speed=0;hopHeight=0;hopVelocity=220;autoHopIn=6+rng.NextDouble()*9;Change(Mood.Hop);sounds.Play("hop");if(autonomousSpeech)AutoSay("우라!");else Say("우라!");}
+    void StartHop(){if(paused)return;characterActionTime=0;LeaveRap();LeaveFoodRace();CancelSocial();scatterActive=false;foodActive=false;idleTime=0;speed=0;hopHeight=0;hopVelocity=220;autoHopIn=6+rng.NextDouble()*9;Change(Mood.Hop);if(autonomousSpeech)sounds.PlayAmbient("hop");else sounds.Play("hop");if(autonomousSpeech)AutoSay("우라!");else Say("우라!");}
     void AutonomousHop(){double idle=idleTime;autonomousSpeech=true;try{StartHop();}finally{autonomousSpeech=false;idleTime=idle;}}
     static double Approach(double value,double goal,double delta){return value<goal?Math.Min(goal,value+delta):Math.Max(goal,value-delta);}
     void TickPet(){RefreshFrameRate(false);double now=frameClock.Elapsed.TotalSeconds,dt=Math.Max(.001,Math.Min(.07,now-lastTick));lastTick=now;if(pendingClicks>0&&now>=clickDeadline&&!pointerDown)ResolveClicks();UpdatePet(dt,Cursor.Position);Render();}
@@ -211,9 +211,9 @@ partial class Usagi : Form {
         if(mood==Mood.Look)angle+=(float)gazeTilt;
         if(PerformingRap&&rapInPlace){pose=rapSession.Owner==this?sprite:poses[0];factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;float pulse=RapPulse();bottom=Height-10-pulse*3*scale;angle=(float)Math.Sin(rapSession.Clock.Elapsed.TotalSeconds*rapSession.Track.Bpm/60*Math.PI*2)*2.2f;squash=pulse*.025f;}
 
-        if(characterActionTime>0){pose=CharacterActionPose();factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;bottom=Height-10-(float)hopHeight;angle=character.Key=="kurimanju"?0:(float)Math.Sin(characterActionTime*4)*1.4f;squash=0;}
+        if(characterActionTime>0){pose=CharacterActionPose();factor=68*scale/headWidths[pose];h=pose.Height*factor;width=pose.Width*factor;float gestureBob;CharacterActionMotion(out angle,out gestureBob,out squash);bottom=Height-10-(float)hopHeight+gestureBob*scale;}
         DrawDetails(g);DrawHearts(g);DrawHopWind(g,bottom);
-        var saved=g.Save();g.TranslateTransform(Width/2,bottom);g.RotateTransform(angle);g.ScaleTransform(1+squash,1-squash);if(characterActionTime>0)g.DrawImage(pose,-width/2,-h,width,h);else if(mood==Mood.Trip||mood==Mood.Recover)DrawStumble(g);else if(mood==Mood.Eat)DrawEatingSprites(g);else g.DrawImage(pose,-width/2,-h,width,h);DrawRapMicrophone(g,width);g.Restore(saved);
+        var saved=g.Save();g.TranslateTransform(Width/2,bottom);g.RotateTransform(angle);g.ScaleTransform(1+squash,1-squash);if(characterActionTime>0)DrawAlignedPose(g,pose,width,h);else if(mood==Mood.Trip||mood==Mood.Recover)DrawStumble(g);else if(mood==Mood.Eat)DrawEatingSprites(g);else DrawAlignedPose(g,pose,width,h);DrawRapMicrophone(g,width);g.Restore(saved);
         if(mood==Mood.Sleep)DrawSleepText(g,width,h);
         petTop=bottom-h;
         if(speechTime>0&&!menu.Visible){float anchorHeight=(mood==Mood.Walk||mood==Mood.Turn||mood==Mood.Look||mood==Mood.Sit)?WalkingSpeechHeight()*scale:h;

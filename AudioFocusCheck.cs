@@ -1,0 +1,11 @@
+using System;
+static class AudioFocusCheck {
+    sealed class Output : IPetAudio {internal int Plays,Stops;internal bool Finished;public bool Done {get{return Finished;}}public void Play(short[] samples,uint device){Plays++;Finished=false;}public void Stop(){Stops++;}public void Dispose(){}}
+    static void Assert(bool pass,string message){if(!pass)throw new Exception(message);}
+    internal static void Run(){var endpoint=new AudioEndpoint{Id="test-headphones",FormFactor=3,WaveId=2};var first=new Output();var second=new Output();using(var a=new PetSound(()=>endpoint,first))using(var b=new PetSound(()=>endpoint,second)){
+        Assert(a.PlayAmbient("hop"),"First ambient voice should play");Assert(!b.PlayAmbient("heart")&&second.Plays==0,"Different pets played overlapping ambient voices");
+        int stops=first.Stops;Assert(b.Play("heart")&&first.Stops>stops,"Direct interaction should replace ambient voice");int plays=second.Plays;Assert(!b.Play("heart")&&second.Plays==plays,"Repeated event restarted the same voice");Assert(!a.Play("heart"),"Same voice from another clone restarted the syllable");
+        a.CharacterKey="hachiware";Assert(a.Play("hop"),"Different direct interaction did not take focus");Assert(a.PlayRap(new short[4410]),"Rap did not take focus");Assert(!b.Play("burst")&&!b.PlayAmbient("sleep"),"Another pet interrupted or overlapped rap");a.StopRap();Assert(b.PlayAmbient("sleep"),"Audio focus did not release after rap");
+        endpoint=new AudioEndpoint{Id="speaker",FormFactor=1,WaveId=0};b.Tick(.1);endpoint=new AudioEndpoint{Id="test-headphones",FormFactor=3,WaveId=2};Assert(a.PlayAmbient("hop"),"Unplug did not release focus");first.Finished=true;Assert(b.PlayAmbient("heart"),"Finished audio retained focus");
+    }Console.WriteLine("PASS: single shared voice, ambient priority, click priority, no repeated restart, rap exclusivity, completion and unplug release.");}
+}
