@@ -52,7 +52,7 @@ partial class Usagi {
     Form CreateSettingsForm(){PetTheme.RefreshSystem();var form=new GlassBubbleForm{Text="먼작귀 펫 설정",Font=menuFont,FormBorderStyle=FormBorderStyle.None,ShowInTaskbar=false,TopMost=true,StartPosition=FormStartPosition.Manual,ClientSize=new Size(400,430),BackColor=SettingArt.Cream,ForeColor=SettingArt.Ink};
         var anchor=new Point((int)Math.Round(x)+Width/2,(int)Math.Round(y+petTop)-5);var area=Screen.FromPoint(anchor).WorkingArea;
         form.Location=new Point(Math.Max(area.Left+4,Math.Min(area.Right-form.Width-4,anchor.X-form.Width/2)),Math.Max(area.Top+4,Math.Min(area.Bottom-form.Height-4,anchor.Y-form.Height)));
-        int tail=Math.Max(24,Math.Min(form.Width-24,anchor.X-form.Left));using(var path=BubbleMenu.Outline(form.Width,form.Height,tail))form.Region=new Region(path);
+        int tail=Math.Max(34,Math.Min(form.Width-34,anchor.X-form.Left));form.ConfigureShape(tail);
         form.Paint+=(s,e)=>{var g=e.Graphics;g.SmoothingMode=System.Drawing.Drawing2D.SmoothingMode.AntiAlias;using(var line=new Pen(SettingArt.Line))g.DrawLine(line,24,308,376,308);};
         var titleFont=new Font(menuFont.FontFamily,15);var smallFont=new Font(menuFont.FontFamily,9);form.Disposed+=(s,e)=>{titleFont.Dispose();smallFont.Dispose();};
         Action<string,int,int,int,Font,Color> text=(value,left,top,width,font,color)=>form.Controls.Add(new Label{Text=value,Location=new Point(left,top),Size=new Size(width,24),Font=font,Tag=color==SettingArt.Muted?"muted":null,ForeColor=color,UseCompatibleTextRendering=true});
