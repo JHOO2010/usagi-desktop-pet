@@ -17,7 +17,7 @@ class BubbleMenu : ContextMenuStrip {
     protected override void OnOpening(System.ComponentModel.CancelEventArgs e){PetTheme.RefreshSystem();BackColor=PetTheme.Surface;ForeColor=PetTheme.Ink;AutoSize=false;Size=new Size(BodyWidth+24,MenuHeight);base.OnOpening(e);Size=new Size(BodyWidth+24,MenuHeight);PerformLayout();}
     protected override void OnOpened(EventArgs e){if(PetAnchor.HasValue){var point=PetAnchor.Value;var area=Screen.FromPoint(point).WorkingArea;Location=new System.Drawing.Point(Math.Max(area.Left+4,Math.Min(area.Right-Width-4,point.X-Width/2)),Math.Max(area.Top+4,Math.Min(area.Bottom-Height-4,point.Y-Height)));TailX=Math.Max(24,Math.Min(Width-24,point.X-Left));RefreshShape();}base.OnOpened(e);}
     void RefreshShape(){using(var path=Outline(Width,Height,TailX)){var old=Region;Region=new Region(path);if(old!=null)old.Dispose();}Invalidate();}
-    internal static GraphicsPath Outline(int width,int height,int tail=-1){var path=new GraphicsPath();float r=28,b=height-14;float tip=tail<0?width/2:tail;
+    internal static GraphicsPath Outline(int width,int height,int tail=-1){var path=new GraphicsPath();float r=44,b=height-14;float tip=tail<0?width/2:tail;
         path.AddArc(1,1,r,r,180,90);path.AddArc(width-r-2,1,r,r,270,90);path.AddArc(width-r-2,b-r,r,r,0,90);
         path.AddLine(width-r/2-2,b,tip+10,b);path.AddLine(tip+10,b,tip,height-2);path.AddLine(tip,height-2,tip-9,b);path.AddLine(tip-9,b,r/2+1,b);path.AddArc(1,b-r,r,r,90,90);path.CloseFigure();return path;
     }
