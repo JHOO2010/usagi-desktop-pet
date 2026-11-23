@@ -19,8 +19,8 @@ partial class Usagi {
     void StartDayGreeting(DateTime now){
         if(!SaveEnabled)return;
         string today=now.ToString("yyyy-MM-dd",CultureInfo.InvariantCulture);
-        if(now.Hour>=6&&now.Hour<11&&morningSeen!=today){morningSeen=today;Change(Mood.Stretch);Say("야하~!");SavePreferences();}
-        else if(IsNight(now)){Change(Mood.Drowsy);Say("후우웅…");}
+        if(now.Hour>=6&&now.Hour<11&&morningSeen!=today){morningSeen=today;Change(Mood.Stretch);SayFor("greet","야하~!");SavePreferences();}
+        else if(IsNight(now)){Change(Mood.Drowsy);SayFor("sleep","후우웅…");}
     }
     void LoadPreferences(){if(!SaveEnabled)return;try{
         string screen="";double ratio=.8;foreach(string line in File.ReadAllLines(preferencesPath)){
@@ -52,24 +52,24 @@ partial class Usagi {
         double dx=cursor.X-(x+Width/2),localY=cursor.Y-y;
         bool near=Math.Abs(dx)<125*scale&&localY>petTop-30*scale&&localY<Height;
         gazeTilt+=(Math.Max(-7,Math.Min(7,dx/13))-gazeTilt)*(1-Math.Exp(-dt/.18));
-        if(PerformingRap||scatterActive||pointerDown||dragging||paused||menu.Visible||foodActive||mood==Mood.Hop||mood==Mood.Fall||mood==Mood.Sleep||mood==Mood.Drowsy||mood==Mood.Trip||mood==Mood.Recover)return;
+        if(characterActionTime>0||mood==Mood.Rise||mood==Mood.Stretch||PerformingRap||scatterActive||pointerDown||dragging||paused||menu.Visible||foodActive||mood==Mood.Hop||mood==Mood.Fall||mood==Mood.Sleep||mood==Mood.Drowsy||mood==Mood.Trip||mood==Mood.Recover)return;
         double travel=Math.Sqrt(mx*mx+my*my);
         bool head=Math.Abs(dx)<40*scale&&localY>petTop+30*scale&&localY<Height-43*scale;
-        if(head&&travel>.2&&travel<Math.Max(4,dt*1100)&&strokeCooldown<=0){strokeTime+=dt;if(strokeTime>.5){strokeTime=0;strokeCooldown=4;speed=0;Change(Mood.Nuzzle);if(character.Key!="usagi")sounds.Play("heart");EmitHearts(false);Say("후웅~");}}
+        if(head&&travel>.2&&travel<Math.Max(4,dt*1100)&&strokeCooldown<=0){strokeTime+=dt;if(strokeTime>.5){strokeTime=0;strokeCooldown=4;speed=0;Change(Mood.Nuzzle);if(character.Key!="usagi")sounds.Play("heart");EmitHearts(false);SayFor("pet","후웅~");}}
         else strokeTime=Math.Max(0,strokeTime-dt*.6);
         if(mood==Mood.Nuzzle)return;
         if(near&&travel>1){int sign=mx>0?1:mx<0?-1:0;if(sign!=0&&sign!=wiggleDirection){wiggleDirection=sign;if(t-lastWiggle<.65)wiggleTime+=.5;else wiggleTime=.5;lastWiggle=t;}
-            if(curiosityCooldown<=0){Settle(Mood.Look);curiosityCooldown=3;direction=dx<0?-1:1;if(wiggleTime>=1.5){AutoSay("하아?");gazeTilt=dx<0?-12:12;wiggleTime=0;}}
+            if(curiosityCooldown<=0){Settle(Mood.Look);curiosityCooldown=3;direction=dx<0?-1:1;if(wiggleTime>=1.5){AutoSayFor("curious","하아?");gazeTilt=dx<0?-12:12;wiggleTime=0;}}
         }
     }
     bool UpdateSpecial(double dt){
         if(UpdateCharacterAction(dt))return true;if(UpdateRap(dt))return true;
         if(UpdateScatter(dt))return true;
         if(foodActive&&mood!=Mood.Eat){idleTime=0;double distance=foodX-(x+Width/2);direction=distance<0?-1:1;targetSpeed=38+74*Math.Min(1,Math.Abs(distance)/(90*scale));decisionTime=100;autoHopIn=100;
-            if(Math.Abs(distance)<19*scale&&ClaimFood()){speed=0;moving=false;Change(Mood.Eat);nextBite=0;Say("푸루루루~");}}
-        if(mood==Mood.Eat){idleTime=0;moving=false;speed=0;if(character.Key!="usagi"&&nextBite<3&&stateTime>=BiteTimes[nextBite]){sounds.PlayAmbient("bite");nextBite++;}if(stateTime>=EatingEnd){FinishFood();EmitHearts(false);Say("야하!");Change(Mood.Look);}return true;}
+            if(Math.Abs(distance)<19*scale&&ClaimFood()){speed=0;moving=false;Change(Mood.Eat);nextBite=0;SayFor("eating","푸루루루~");}}
+        if(mood==Mood.Eat){idleTime=0;moving=false;speed=0;if(character.Key!="usagi"&&nextBite<3&&stateTime>=BiteTimes[nextBite]){sounds.PlayAmbient("bite");nextBite++;}if(stateTime>=EatingEnd){FinishFood();EmitHearts(false);SayFor("full","야하!");Change(Mood.Look);}return true;}
         if(mood==Mood.Nuzzle){idleTime=0;moving=false;speed=0;if(stateTime>1.8){Change(Mood.Look);decisionTime=2;}return true;}
-        if(mood==Mood.Trip){moving=false;speed=0;MoveStumble(dt);if(stateTime>.72){Change(Mood.Recover);AutoSay("…하아?");}return true;}
+        if(mood==Mood.Trip){moving=false;speed=0;MoveStumble(dt);if(stateTime>.72){Change(Mood.Recover);AutoSayFor("surprise","…하아?");}return true;}
         if(mood==Mood.Recover){moving=false;if(stateTime>1.35){Change(Mood.Walk);targetSpeed=50;decisionTime=2;}return true;}
         return false;
     }
@@ -135,11 +135,11 @@ partial class Usagi {
             using(var ink=new SolidBrush(lightSleepInk?Color.FromArgb(255,251,226):Color.FromArgb(89,57,34)))g.FillPath(ink,path);
         }
     }
-    // Four deliberate bites, with a brief approach, chew, and swallow for each one.
-    static int FoodBites(double time){int bites=0;foreach(double bite in new[]{.95,1.8,2.65,3.5})if(time>=bite)bites++;return bites;}
+    // Three bites share the same clock as the mouth sprites, chewing and short foley.
+    static int FoodBites(double time){int bites=0;foreach(double bite in BiteTimes)if(time>=bite)bites++;return bites;}
     static readonly double[] BiteTimes={.72,1.67,2.55}; const double EatingEnd=3.25;
     static double ChewPulse(double time){if(time<.4||time>=2.73)return 0;double pulse=0;foreach(double bite in BiteTimes){double u=(time-bite)/.12;pulse=Math.Max(pulse,Math.Exp(-u*u));}return pulse;}
-    static float FoodRemaining(double time){double eaten=0;foreach(double bite in new[]{.95,1.8,2.65,3.5}){double u=Math.Max(0,Math.Min(1,(time-bite)/.18));eaten+=.225*u*u*(3-2*u);}eaten+=.1*Math.Max(0,Math.Min(1,(time-3.9)/.25));return (float)Math.Max(0,1-eaten);}
+    static float FoodRemaining(double time){double eaten=0;foreach(double bite in BiteTimes){double u=Math.Max(0,Math.Min(1,(time-bite)/.18));eaten+=u*u*(3-2*u)/3;}return (float)Math.Max(0,1-eaten);}
     static void DrawPizzaBun(Graphics g,float cx,float cy,float size,float remaining){DrawPizzaBun(g,cx,cy,size,remaining,0);}
     static void DrawPizzaBun(Graphics g,float cx,float cy,float size,float remaining,float rotation){if(remaining<=0)return;var saved=g.Save();g.TranslateTransform(cx,cy);g.ScaleTransform(size,size);g.RotateTransform(rotation);
         using(var bun=new GraphicsPath()){

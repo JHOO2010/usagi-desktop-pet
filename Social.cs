@@ -15,7 +15,7 @@ partial class Usagi {
     }
     double greetLeft,greetReplyDelay=-1,greetCooldown=3,socialBreak,playLeft,playCooldown=7,followLeft,followCooldown=5,napSeekTime;
     Usagi napFriend;bool following,followerWaiting;double followReaction=-1;
-    bool SocialBusy {get{return characterActionTime>0||PerformingRap||IsDisposed||paused||menu.Visible||pointerDown||dragging||pendingClicks>0||foodActive||scatterActive||mood==Mood.Hop||mood==Mood.Fall||mood==Mood.Eat||mood==Mood.Nuzzle||mood==Mood.Trip||mood==Mood.Recover||mood==Mood.Stretch;}}
+    bool SocialBusy {get{return characterActionTime>0||PerformingRap||IsDisposed||paused||menu.Visible||pointerDown||dragging||pendingClicks>0||foodActive||scatterActive||mood==Mood.Hop||mood==Mood.Fall||mood==Mood.Eat||mood==Mood.Nuzzle||mood==Mood.Trip||mood==Mood.Recover||mood==Mood.Stretch||mood==Mood.Rise;}}
     bool SameFloor(Usagi other){return other!=this&&!other.IsDisposed&&Math.Abs((y+Height)-(other.y+other.Height))<8&&PatrolArea()==other.PatrolArea();}
     void CancelSocial(){greetLeft=0;greetReplyDelay=-1;playLeft=0;following=false;followLeft=0;napFriend=null;napSeekTime=0;socialBreak=3;}
     bool UpdateSocial(double dt,System.Drawing.Point cursor,bool mouseMoved){
@@ -23,7 +23,7 @@ partial class Usagi {
         if(SocialBusy){CancelSocial();return false;}
         if(mouseMoved&&napFriend!=null){napFriend=null;napSeekTime=0;socialBreak=2;}
         if(greetLeft>0){greetLeft-=dt;moving=false;speed=0;
-            if(greetReplyDelay>=0){greetReplyDelay-=dt;if(greetReplyDelay<0)Say("야하~!");}
+            if(greetReplyDelay>=0){greetReplyDelay-=dt;if(greetReplyDelay<0)AutoSayFor("greet","야하~!");}
             if(greetLeft<=0){Change(Mood.Walk);targetSpeed=58;decisionTime=2;}return true;}
         if(mood==Mood.Sleep)return false;
         if(napFriend!=null){
@@ -33,13 +33,13 @@ partial class Usagi {
         if(idleTime>=9.5&&socialBreak<=0){foreach(var peer in livePets)if(SameFloor(peer)&&peer.mood==Mood.Sleep&&!peer.SocialBusy){napFriend=peer;napSeekTime=0;return true;}}
         if(mood==Mood.Drowsy||idleTime>=9.5)return false;
         if(playLeft>0){playLeft-=dt;following=false;
-            if(playLeft>1.25){double goal=cursor.X-(cursor.X>x+Width/2?22:-22)*scale;SocialMove(dt,goal,90,4);if(Math.Abs(cursor.X-(x+Width/2))<28*scale){playLeft=1.25;AutoSay("우라!");}}
+            if(playLeft>1.25){double goal=cursor.X-(cursor.X>x+Width/2?22:-22)*scale;SocialMove(dt,goal,90,4);if(Math.Abs(cursor.X-(x+Width/2))<28*scale){playLeft=1.25;AutoSayFor("hop","우라!");}}
             else{double away=(x+Width/2)<cursor.X?-1:1;SocialMove(dt,x+Width/2+away*95,105,2);}
             if(playLeft<=0){Change(Mood.Look);socialBreak=2;decisionTime=1;}return true;
         }
         if(socialBreak>0)return false;
         double dx=cursor.X-(x+Width/2),dy=cursor.Y-(y+Height-55*scale);
-        if(playCooldown<=0&&Math.Abs(dx)>32*scale&&Math.Abs(dx)<155*scale&&Math.Abs(dy)<55*scale&&mouseMoved){playLeft=3.2;playCooldown=16+rng.NextDouble()*10;AutoSay("하아?");return true;}
+        if(playCooldown<=0&&Math.Abs(dx)>32*scale&&Math.Abs(dx)<155*scale&&Math.Abs(dy)<55*scale&&mouseMoved){playLeft=3.2;playCooldown=16+rng.NextDouble()*10;AutoSayFor("curious","하아?");return true;}
         if(greetCooldown<=0){foreach(var peer in livePets){double distance=peer.x+peer.Width/2-(x+Width/2);
             if(SameFloor(peer)&&!peer.SocialBusy&&peer.mood!=Mood.Sleep&&peer.mood!=Mood.Drowsy&&peer.greetLeft<=0&&peer.playLeft<=0&&peer.greetCooldown<=0&&direction!=peer.direction&&(moving||peer.moving)&&Math.Abs(distance)<44*(scale+peer.scale)&&Math.Abs(distance)>12){
                 BeginGreeting(peer);return true;
@@ -54,7 +54,7 @@ partial class Usagi {
     }
     void BeginGreeting(Usagi peer){
         greetLeft=1.3+rng.NextDouble()*1.1;peer.greetLeft=1.5+peer.rng.NextDouble()*1.2;greetCooldown=peer.greetCooldown=16;following=peer.following=false;speed=peer.speed=0;moving=peer.moving=false;
-        direction=peer.x>x?1:-1;peer.direction=-direction;Change(Mood.Look);peer.Change(Mood.Look);Say("야하!");peer.greetReplyDelay=.28;
+        direction=peer.x>x?1:-1;peer.direction=-direction;Change(Mood.Look);peer.Change(Mood.Look);AutoSayFor("greet","야하!");peer.greetReplyDelay=.28;
     }
     Usagi FindLeader(){Usagi leader=null;foreach(var peer in livePets)if(SameFloor(peer)&&!peer.SocialBusy&&peer.scale>scale+.05f&&(peer.mood==Mood.Walk||peer.mood==Mood.Turn||peer.mood==Mood.Look||peer.mood==Mood.Sit)&&(leader==null||peer.scale>leader.scale))leader=peer;return leader;}
     double FollowPosition(Usagi leader){double gap=0;float previous=leader.scale;var line=new System.Collections.Generic.List<Usagi>();foreach(var peer in livePets)if((peer==this||SameFloor(peer))&&peer!=leader&&peer.scale<leader.scale)line.Add(peer);line.Sort((a,b)=>{float bs=b.scale,asize=a.scale;int size=bs.CompareTo(asize);return size!=0?size:livePets.IndexOf(a).CompareTo(livePets.IndexOf(b));});
