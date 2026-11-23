@@ -86,7 +86,7 @@ partial class Usagi {
         var back=new SettingButton{Text="뒤로가기",IconName="back",IconOnly=true,AccessibleName="뒤로가기",Location=new Point(0,0),Size=new Size(32,32)};page.Controls.Add(back);
         back.Click+=(s,e)=>{form.Controls.Remove(page);page.Dispose();foreach(var control in hidden)control.Visible=true;foreach(var control in hidden)if(control is LinkLabel){control.Focus();break;}};
         var infoFont=new Font(menuFont.FontFamily,9.25f);page.Disposed+=(s,e)=>infoFont.Dispose();
-        page.Controls.Add(new Label{Text="정보",Location=new Point(45,5),Size=new Size(250,28),UseCompatibleTextRendering=true});
+        page.Controls.Add(new Label{Text="정보",Location=new Point(45,0),Size=new Size(250,32),TextAlign=ContentAlignment.MiddleLeft,UseCompatibleTextRendering=false});
         page.Controls.Add(new Label{Text="먼작귀 펫  v"+PetUpdates.CurrentVersion.ToString(3),Location=new Point(0,48),Size=new Size(344,25),UseCompatibleTextRendering=true});
         page.Controls.Add(new Label{Text="만든 사람  JHOO",Location=new Point(0,77),Size=new Size(344,23),Tag="muted",UseCompatibleTextRendering=true});
         AddSettingsInfoLink(page,"포트폴리오","https://jhoo-diblisher.pages.dev/",112);

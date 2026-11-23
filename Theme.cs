@@ -23,14 +23,14 @@ static class PetTheme {
     internal static void PaintUnder(Graphics g,Control control){var root=control.FindForm() as GlassBubbleForm;if(root==null){g.Clear(Surface);return;}Point point=Point.Empty;Control cursor=control;while(cursor!=root&&cursor!=null){point.Offset(cursor.Location);cursor=cursor.Parent;}root.PaintSlice(g,new Rectangle(point,control.Size));}
 }
 // Frosted backdrop is captured once before showing, never saved or uploaded.
-// Unlike whole-window Opacity, the material leaves text and controls fully opaque.
+// Flat blurred material with a small whole-window alpha; no decorative lighting.
 class GlassBubbleForm : Form {
     Bitmap blurred,material;
-    internal GlassBubbleForm(){DoubleBuffered=true;PetTheme.Changed+=ThemeChanged;}
+    internal GlassBubbleForm(){Opacity=.96;DoubleBuffered=true;PetTheme.Changed+=ThemeChanged;}
     protected override void OnLoad(EventArgs e){CaptureBackdrop();PetTheme.Apply(this);base.OnLoad(e);}
     internal void CaptureBackdrop(){if(blurred!=null){blurred.Dispose();blurred=null;}try{using(var screen=new Bitmap(Width,Height))using(var g=Graphics.FromImage(screen)){g.Clear(PetTheme.Surface);var clip=Rectangle.Intersect(Bounds,SystemInformation.VirtualScreen);if(clip.Width>0&&clip.Height>0)g.CopyFromScreen(clip.Location,new Point(clip.Left-Left,clip.Top-Top),clip.Size);blurred=new Bitmap(Math.Max(1,Width/24),Math.Max(1,Height/24));using(var b=Graphics.FromImage(blurred)){b.InterpolationMode=InterpolationMode.HighQualityBilinear;b.DrawImage(screen,0,0,blurred.Width,blurred.Height);}}}catch{if(blurred!=null)blurred.Dispose();blurred=null;}RebuildMaterial();}
     void ThemeChanged(object sender,EventArgs e){if(IsDisposed)return;RebuildMaterial();PetTheme.Apply(this);}
-    void RebuildMaterial(){if(material!=null)material.Dispose();material=new Bitmap(Math.Max(1,Width),Math.Max(1,Height));using(var g=Graphics.FromImage(material)){g.Clear(PetTheme.Surface);if(blurred!=null){g.InterpolationMode=InterpolationMode.HighQualityBicubic;g.DrawImage(blurred,0,0,Width,Height);using(var tint=new SolidBrush(Color.FromArgb(PetTheme.Dark?205:202,PetTheme.Surface)))g.FillRectangle(tint,0,0,Width,Height);}using(var glow=new LinearGradientBrush(new Point(0,0),new Point(Width,Height),Color.FromArgb(PetTheme.Dark?25:75,255,255,255),Color.FromArgb(0,255,255,255)))g.FillRectangle(glow,0,0,Width,Height);}Invalidate(true);}
+    void RebuildMaterial(){if(material!=null)material.Dispose();material=new Bitmap(Math.Max(1,Width),Math.Max(1,Height));using(var g=Graphics.FromImage(material)){g.Clear(PetTheme.Surface);if(blurred!=null){g.InterpolationMode=InterpolationMode.HighQualityBicubic;g.DrawImage(blurred,0,0,Width,Height);using(var tint=new SolidBrush(Color.FromArgb(PetTheme.Dark?190:186,PetTheme.Surface)))g.FillRectangle(tint,0,0,Width,Height);}}Invalidate(true);}
     internal Color SampleMaterial(Point point){if(material==null)return PetTheme.Surface;int r=0,g=0,b=0;for(int dy=-20;dy<=20;dy+=20)for(int dx=-20;dx<=20;dx+=20){Color c=material.GetPixel(Math.Max(0,Math.Min(material.Width-1,point.X+dx)),Math.Max(0,Math.Min(material.Height-1,point.Y+dy)));r+=c.R;g+=c.G;b+=c.B;}return Color.FromArgb(r/9,g/9,b/9);}
     internal void PaintSlice(Graphics g,Rectangle slice){if(material==null){g.Clear(PetTheme.Surface);return;}g.DrawImage(material,new Rectangle(Point.Empty,slice.Size),slice,GraphicsUnit.Pixel);}
     protected override void OnPaintBackground(PaintEventArgs e){PaintSlice(e.Graphics,ClientRectangle);}
