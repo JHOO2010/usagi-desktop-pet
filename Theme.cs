@@ -8,6 +8,7 @@ static class PetTheme {
     internal static string Mode="system";internal static bool Dark;internal static event EventHandler Changed;
     internal static Color Surface {get{return Dark?Color.FromArgb(38,36,34):Color.FromArgb(248,246,241);}}
     internal static Color Ink {get{return Dark?Color.FromArgb(244,237,225):Color.FromArgb(64,53,43);}}
+    internal static Color FooterInk {get{return Dark?Color.FromArgb(155,149,140):Color.FromArgb(124,115,104);}}
     internal static Color LinkInk {get{return Dark?Ink:Color.Black;}}
     internal static Color Muted {get{return Dark?Color.FromArgb(205,195,181):Color.FromArgb(90,76,61);}}
     internal static Color Line {get{return Dark?Color.FromArgb(83,76,67):Color.FromArgb(218,207,189);}}
@@ -19,7 +20,7 @@ static class PetTheme {
     internal static bool SystemDark(){try{using(var key=Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"))return key!=null&&Convert.ToInt32(key.GetValue("AppsUseLightTheme",1))==0;}catch{return false;}}
     internal static void Set(string mode){if(mode!="light"&&mode!="dark"&&mode!="system")mode="system";bool dark=mode=="dark"||mode=="system"&&SystemDark();if(Mode==mode&&Dark==dark)return;Mode=mode;Dark=dark;if(Changed!=null)Changed(null,EventArgs.Empty);}
     internal static void RefreshSystem(){if(Mode=="system")Set("system");}
-    internal static void Apply(Control control){bool opaque=control is RichTextBox;control.ForeColor=Equals(control.Tag,"muted")?Muted:Ink;if(control is Form||opaque)control.BackColor=Surface;else if(control is Label||control is PictureBox||control is Panel)control.BackColor=Color.Transparent;var link=control as LinkLabel;if(link!=null){link.LinkColor=link.VisitedLinkColor=Equals(control.Tag,"muted")?Muted:LinkInk;link.ActiveLinkColor=Ink;}foreach(Control child in control.Controls)Apply(child);control.Invalidate();}
+    internal static void Apply(Control control){bool opaque=control is RichTextBox;control.ForeColor=Equals(control.Tag,"muted")?Muted:Ink;if(control is Form||opaque)control.BackColor=Surface;else if(control is Label||control is PictureBox||control is Panel)control.BackColor=Color.Transparent;var link=control as LinkLabel;if(link!=null){link.LinkColor=link.VisitedLinkColor=Equals(control.Tag,"footer")?FooterInk:Equals(control.Tag,"muted")?Muted:LinkInk;link.ActiveLinkColor=Ink;}foreach(Control child in control.Controls)Apply(child);control.Invalidate();}
     internal static void PaintUnder(Graphics g,Control control){var root=control.FindForm() as GlassBubbleForm;if(root==null){g.Clear(Surface);return;}Point point=Point.Empty;Control cursor=control;while(cursor!=root&&cursor!=null){point.Offset(cursor.Location);cursor=cursor.Parent;}root.PaintSlice(g,new Rectangle(point,control.Size));}
 }
 // Frosted backdrop is captured once before showing, never saved or uploaded.
