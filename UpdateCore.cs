@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Diagnostics;
 using System.Web.Script.Serialization;
 
 class PetRelease {
@@ -36,6 +37,25 @@ static class PetUpdates {
     }
     static bool TrustedHost(Uri uri){return uri.Scheme=="https"&&(uri.Host=="api.github.com"||uri.Host=="github.com"||uri.Host=="release-assets.githubusercontent.com"||uri.Host=="objects.githubusercontent.com");}
     static void ReadUrl(string url,Stream target,long limit,CancellationToken token,Action<int> progress){
+        token.ThrowIfCancellationRequested();
+        var uri=new Uri(url);if(!TrustedHost(uri))throw new InvalidDataException("Unexpected update host.");
+        string curl=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System),"curl.exe");
+        if(File.Exists(curl)){ReadWithCurl(curl,url,target,limit,token,progress);return;}
+        ReadWithFramework(url,target,limit,token,progress);
+    }
+    static void ReadWithCurl(string curl,string url,Stream target,long limit,CancellationToken token,Action<int> progress){
+        string temporary=Path.Combine(Path.GetTempPath(),"usagi-update-"+Guid.NewGuid().ToString("N")+".download");var metadata=new StringBuilder();
+        var start=new ProcessStartInfo(curl,"--disable --location --max-redirs 5 --proto =https --proto-redir =https --fail --silent --show-error --connect-timeout 10 --max-time 180 --output "+Quote(temporary)+" --write-out "+Quote("%{http_code}\\n%{url_effective}")+" --user-agent "+Quote("UsagiDesktopPet/"+CurrentVersion.ToString(3))+" --header "+Quote("Cache-Control: no-cache, no-store")+" --url "+Quote(url)){UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden,RedirectStandardOutput=true,RedirectStandardError=true};
+        try{using(var process=new Process{StartInfo=start}){
+            process.OutputDataReceived+=(s,e)=>{if(e.Data!=null)lock(metadata){if(metadata.Length<16384)metadata.AppendLine(e.Data);}};process.ErrorDataReceived+=(s,e)=>{};
+            process.Start();process.BeginOutputReadLine();process.BeginErrorReadLine();var clock=Stopwatch.StartNew();int last=-1;
+            try{while(!process.WaitForExit(80)){token.ThrowIfCancellationRequested();if(clock.Elapsed.TotalSeconds>190)throw new WebException("Update connection timed out.",WebExceptionStatus.Timeout);long length=File.Exists(temporary)?new FileInfo(temporary).Length:0;if(length>limit)throw new InvalidDataException("Download too large.");if(progress!=null){int value=(int)Math.Min(99,length*100/Math.Max(1,limit));if(value!=last){last=value;progress(value);}}}process.WaitForExit();token.ThrowIfCancellationRequested();
+                string[] response=metadata.ToString().Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries);if(process.ExitCode!=0)throw new WebException("Update transfer failed (curl "+process.ExitCode+").");Uri effective;if(response.Length!=2||response[0]!="200"||!Uri.TryCreate(response[1],UriKind.Absolute,out effective)||!TrustedHost(effective))throw new InvalidDataException("Unexpected download response.");
+                if(!File.Exists(temporary)||new FileInfo(temporary).Length>limit)throw new InvalidDataException("Invalid download size.");using(var input=File.OpenRead(temporary))input.CopyTo(target);
+            }finally{if(!process.HasExited){try{process.Kill();process.WaitForExit(3000);}catch(InvalidOperationException){}}}
+        }}finally{if(File.Exists(temporary))File.Delete(temporary);}
+    }
+    static void ReadWithFramework(string url,Stream target,long limit,CancellationToken token,Action<int> progress){
         var uri=new Uri(url);if(!TrustedHost(uri))throw new InvalidDataException("Unexpected update host.");ServicePointManager.SecurityProtocol|=(SecurityProtocolType)3072;
         var request=(HttpWebRequest)WebRequest.Create(uri);request.CachePolicy=new System.Net.Cache.RequestCachePolicy(System.Net.Cache.RequestCacheLevel.NoCacheNoStore);request.Headers[HttpRequestHeader.CacheControl]="no-cache, no-store";request.UserAgent="UsagiDesktopPet/"+CurrentVersion.ToString(3);request.Accept="application/vnd.github+json";request.Timeout=20000;request.ReadWriteTimeout=15000;
         using(token.Register(()=>request.Abort()))using(var response=(HttpWebResponse)request.GetResponse()){
@@ -45,7 +65,8 @@ static class PetUpdates {
     }
     static string ReadText(string url,int limit,CancellationToken token){using(var stream=new MemoryStream()){ReadUrl(url,stream,limit,token,null);return Encoding.UTF8.GetString(stream.ToArray());}}
     internal static PetRelease FetchLatest(Version current,CancellationToken token){return FetchLatest(current,token,ReadText);}
-    internal static PetRelease FetchLatest(Version current,CancellationToken token,Func<string,int,CancellationToken,string> read){string fresh="?check="+DateTime.UtcNow.Ticks.ToString(CultureInfo.InvariantCulture);string json;try{json=read(ManifestUrl+fresh,2097152,token);}catch(WebException error){var response=error.Response as HttpWebResponse;if(response==null||response.StatusCode!=HttpStatusCode.NotFound)throw;response.Dispose();json=read(LatestUrl+fresh,2097152,token);}return ParseRelease(json,current);}
+    internal static PetRelease FetchLatest(Version current,CancellationToken token,Func<string,int,CancellationToken,string> read){string fresh="?check="+DateTime.UtcNow.Ticks.ToString(CultureInfo.InvariantCulture);string json;try{json=read(ManifestUrl+fresh,2097152,token);}catch(WebException){token.ThrowIfCancellationRequested();json=read(LatestUrl+fresh,2097152,token);}return ParseRelease(json,current);}
+    internal static void LogFailure(string step,Exception error){try{Directory.CreateDirectory(CacheDirectory);string file=Path.Combine(CacheDirectory,"update.log");if(File.Exists(file)&&new FileInfo(file).Length>131072)File.WriteAllText(file,"");File.AppendAllText(file,DateTime.UtcNow.ToString("u",CultureInfo.InvariantCulture)+" "+step+" · "+error.GetType().Name+": "+error.Message+Environment.NewLine);}catch(IOException){}catch(UnauthorizedAccessException){}}
     internal static string ParseChecksum(string text,string filename){var pieces=text.Trim().Split((char[])null,StringSplitOptions.RemoveEmptyEntries);if(pieces.Length!=2||!Regex.IsMatch(pieces[0],"^[0-9a-fA-F]{64}$")||pieces[1].TrimStart('*')!=filename)throw new InvalidDataException("Invalid installer checksum.");return pieces[0].ToLowerInvariant();}
     internal static string HashFile(string path){using(var sha=SHA256.Create())using(var file=File.OpenRead(path))return BitConverter.ToString(sha.ComputeHash(file)).Replace("-","").ToLowerInvariant();}
     internal static void VerifyInstaller(string path,string expected){if(!Regex.IsMatch(expected??"","^[0-9a-fA-F]{64}$")||!String.Equals(HashFile(path),expected,StringComparison.OrdinalIgnoreCase))throw new InvalidDataException("Installer checksum mismatch.");using(var file=File.OpenRead(path))if(file.ReadByte()!=77||file.ReadByte()!=90)throw new InvalidDataException("Installer format mismatch.");}
