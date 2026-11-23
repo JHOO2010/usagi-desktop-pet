@@ -26,7 +26,7 @@ partial class Usagi {
         string screen="";double ratio=.8;foreach(string line in File.ReadAllLines(preferencesPath)){
             int equal=line.IndexOf('=');if(equal<0)continue;string key=line.Substring(0,equal),value=line.Substring(equal+1);float size;double fraction;
             if(key=="scale"&&float.TryParse(value,NumberStyles.Float,CultureInfo.InvariantCulture,out size)&&size>=.75&&size<=1.4)scale=size;
-            if(key=="sound")sounds.Enabled=value!="off";
+            if(key=="sound")sounds.Mode=value=="off"?"off":value=="all"?"all":"headphones";
             if(key=="screen")screen=value;
             if(key=="position"&&double.TryParse(value,NumberStyles.Float,CultureInfo.InvariantCulture,out fraction)&&!double.IsNaN(fraction)&&!double.IsInfinity(fraction))ratio=Math.Max(.05,Math.Min(.95,fraction));
             if(key=="morning")morningSeen=value;
@@ -39,7 +39,7 @@ partial class Usagi {
         var area=PatrolArea();var screen=patrolScreen;
         double ratio=Math.Max(.05,Math.Min(.95,(x+Width/2-area.Left)/area.Width));
         Directory.CreateDirectory(Path.GetDirectoryName(preferencesPath));string temp=preferencesPath+".tmp";
-        File.WriteAllLines(temp,new[]{"scale="+scale.ToString(CultureInfo.InvariantCulture),"sound="+(sounds.Enabled?"on":"off"),"screen="+screen.DeviceName,"position="+ratio.ToString(CultureInfo.InvariantCulture),"morning="+morningSeen,"character="+character.Key});
+        File.WriteAllLines(temp,new[]{"scale="+scale.ToString(CultureInfo.InvariantCulture),"sound="+sounds.Mode,"screen="+screen.DeviceName,"position="+ratio.ToString(CultureInfo.InvariantCulture),"morning="+morningSeen,"character="+character.Key});
         if(File.Exists(preferencesPath))File.Replace(temp,preferencesPath,null);else File.Move(temp,preferencesPath);
     }catch(IOException){}catch(UnauthorizedAccessException){}}
     void OfferFood(){PlaceSharedFood();}
@@ -102,7 +102,7 @@ partial class Usagi {
     void ClearClones(){foreach(var pet in livePets.ToArray()){pet.clonesPending=0;if(pet.isClone&&!pet.IsDisposed)pet.Close();}clonesPending=0;}
     void UpdateCloneQueue(double dt){if(clonesPending<=0||IsDisposed)return;cloneDelay-=dt;if(cloneDelay>0)return;
         if(livePets.Count>=16){clonesPending=0;return;}cloneDelay=.11;clonesPending--;
-        var pet=new Usagi(true,this);pet.scale=cloneSizes[cloneSequence%4];pet.sounds.Enabled=sounds.Enabled;
+        var pet=new Usagi(true,this);pet.scale=cloneSizes[cloneSequence%4];pet.sounds.Mode=sounds.Mode;
         pet.x=x;pet.y=y;pet.idleTime=0;pet.speechTime=0;pet.nextSpeechTime=7+rng.NextDouble()*3;
         int slot=cloneSequence++%4;pet.scatterVX=new[]{-225.0,140.0,-120.0,245.0}[slot];pet.scatterVY=-235-slot%2*45;pet.scatterActive=true;pet.scatterTime=0;pet.Change(Mood.Fall);
         pet.direction=pet.scatterVX>0?1:-1;pet.targetSpeed=44+rng.NextDouble()*45;pet.decisionTime=1+rng.NextDouble()*2;

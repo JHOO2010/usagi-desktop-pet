@@ -10,14 +10,14 @@ interface IPetAudioPosition {double? PositionSeconds {get;}}
 interface IPetAudio : IDisposable {void Play(short[] samples,uint device);void Stop();bool Done {get;}}
 class PetSound : IDisposable {
     readonly Func<AudioEndpoint> probe;readonly IPetAudio output;string playingDevice,playingEffect;double poll;
-    public bool Enabled=true;internal string CharacterKey="usagi";static readonly object voiceLock=new object();static PetSound voiceOwner;int priority;
+    public bool Enabled=true;internal bool AllOutputs;internal string Mode {get{return !Enabled?"off":AllOutputs?"all":"headphones";}set{Enabled=value!="off";AllOutputs=value=="all";Tick(1);}}internal string CharacterKey="usagi";static readonly object voiceLock=new object();static PetSound voiceOwner;int priority;
     public PetSound():this(EndpointProbe.Read,new WaveAudio()){}
     internal PetSound(Func<AudioEndpoint> source,IPetAudio backend){probe=source;output=backend;}
     public bool Play(string effect){try{return PlaySamples(effect,LoadCharacterClip(effect),2);}catch{return false;}}
     short[] LoadCharacterClip(string effect){if(CharacterKey=="usagi")return LoadClip(effect);string relative=CharacterSoundCues.RelativePath(CharacterKey,effect);if(relative==null)return new short[0];string key="cue/"+effect+"/"+relative;short[] samples;if(clips.TryGetValue(key,out samples))return samples;string file=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,relative.Replace('/',Path.DirectorySeparatorChar));if(!File.Exists(file))return new short[0];samples=CharacterSoundCues.Balance(effect,LoadPcmFile("source/"+relative,file));clips[key]=samples;return samples;}
     bool Active {get{return playingDevice!=null&&!output.Done;}}
     bool PlaySamples(string effect,short[] samples,int requestedPriority){if(!Enabled||samples==null||samples.Length==0)return false;lock(voiceLock){try{
-        var device=probe();if(device==null||!device.Headphones||device.WaveId==uint.MaxValue)return false;
+        var device=probe();if(device==null||(!AllOutputs&&!device.Headphones)||device.WaveId==uint.MaxValue)return false;
         if(voiceOwner!=null&&!voiceOwner.Active)voiceOwner.StopAll();
         if(voiceOwner!=null){if(requestedPriority==1||voiceOwner.priority>requestedPriority)return false;if(voiceOwner.playingEffect==effect&&voiceOwner.CharacterKey==CharacterKey)return false;voiceOwner.StopAll();}
         var quiet=new short[samples.Length];for(int i=0;i<samples.Length;i++)quiet[i]=(short)(samples[i]*.5);output.Stop();output.Play(quiet,device.WaveId);if(output.Done){playingDevice=null;playingEffect=null;return false;}playingDevice=device.Id;playingEffect=effect;priority=requestedPriority;voiceOwner=this;poll=0;return true;
@@ -30,7 +30,7 @@ class PetSound : IDisposable {
     public bool PlayAmbient(string effect){try{return PlaySamples(effect,LoadCharacterClip(effect),1);}catch{return false;}}
     public void StopSleep(){if(playingEffect=="sleep")StopAll();}
     public void Tick(double dt){if(playingDevice==null)return;poll-=dt;if(poll>0)return;poll=.06;
-        try{var device=probe();if(!Enabled||device==null||!device.Headphones||device.Id!=playingDevice||output.Done)StopAll();}catch{StopAll();}
+        try{var device=probe();if(!Enabled||device==null||(!AllOutputs&&!device.Headphones)||device.Id!=playingDevice||output.Done)StopAll();}catch{StopAll();}
     }
     public void Dispose(){StopAll();output.Dispose();}
     static readonly System.Collections.Generic.Dictionary<string,short[]> clips=new System.Collections.Generic.Dictionary<string,short[]>();
@@ -71,7 +71,7 @@ static class EndpointProbe {
             string id;device.GetId(out id);device.OpenPropertyStore(0,out store);
             var factor=new Key("1da5d803-d492-4edd-8c23-e0c0ffee7f0e",0);Value value;store.GetValue(ref factor,out value);int form;try{form=value.vt==19?(int)value.number:-1;}finally{PropVariantClear(ref value);}
             var friendly=new Key("a45c254e-df1c-4efd-8020-67d146a850e0",14);store.GetValue(ref friendly,out value);string name;try{name=value.vt==31?Marshal.PtrToStringUni(value.pointer):"";}finally{PropVariantClear(ref value);}
-            return new AudioEndpoint{Id=id,Name=name,FormFactor=form,WaveId=form==3||form==5?FindWaveId(id):uint.MaxValue};
+            return new AudioEndpoint{Id=id,Name=name,FormFactor=form,WaveId=FindWaveId(id)};
         }catch{return null;}finally{if(store!=null)Marshal.ReleaseComObject(store);if(device!=null)Marshal.ReleaseComObject(device);if(enumerator!=null)Marshal.ReleaseComObject(enumerator);}
     }
     static uint FindWaveId(string endpoint){IntPtr size=Marshal.AllocHGlobal(IntPtr.Size);try{for(uint i=0;i<waveOutGetNumDevs();i++){
