@@ -1,0 +1,13 @@
+using System;using System.Drawing;using System.IO;using System.Reflection;using System.Windows.Forms;
+static class ThemeCheck {
+ static void Assert(bool value,string message){if(!value)throw new Exception(message);}
+ static double Luminance(Color c){double sum=0;double[] values={c.R/255.0,c.G/255.0,c.B/255.0},weights={.2126,.7152,.0722};for(int i=0;i<3;i++)sum+=weights[i]*(values[i]<=.04045?values[i]/12.92:Math.Pow((values[i]+.055)/1.055,2.4));return sum;}
+ static double Contrast(Color a,Color b){double x=Luminance(a),y=Luminance(b);return (Math.Max(x,y)+.05)/(Math.Min(x,y)+.05);}
+ static readonly BindingFlags flags=BindingFlags.NonPublic|BindingFlags.Instance;
+ internal static void Run(){string original=PetTheme.Mode,path=Path.Combine(Path.GetTempPath(),"pet-theme-"+Guid.NewGuid().ToString("N")+".txt");try{using(var pet=new Usagi())using(var form=(Form)typeof(Usagi).GetMethod("CreateSettingsForm",flags).Invoke(pet,null)){
+  form.Show();Application.DoEvents();foreach(string mode in new[]{"light","dark","system","dark","light"}){((SettingButton)form.Controls["Theme-"+mode]).PerformClick();Assert(PetTheme.Mode==mode,"Theme selector did not apply");Assert(form.ForeColor==PetTheme.Ink,"Settings retained stale foreground");foreach(Control child in form.Controls)if(child is LinkLabel)Assert(((LinkLabel)child).LinkColor==PetTheme.LinkInk,"Footer link invisible in theme");Assert(form.Controls["CharacterLogo"].BackColor==Color.Transparent,"Logo has an opaque square");Assert(Contrast(PetTheme.Ink,PetTheme.Surface)>=7&&Contrast(PetTheme.Muted,PetTheme.Surface)>=4.5&&Contrast(PetTheme.SelectionInk,PetTheme.Accent)>=4.5,"Theme text contrast insufficient");using(var b=new Bitmap(form.Width,form.Height))form.DrawToBitmap(b,form.ClientRectangle);PetTheme.SaveTo(path);PetTheme.Set(mode=="dark"?"light":"dark");PetTheme.LoadFrom(path);Assert(PetTheme.Mode==mode,"Theme preference not restored");}
+  PetTheme.Set("dark");typeof(Usagi).GetMethod("ShowSettingsInfo",flags).Invoke(pet,new object[]{form});Assert(form.Controls["InfoPage"].ForeColor==PetTheme.Ink,"Nested info page ignored dark mode");PetTheme.Set("light");Assert(form.Controls["InfoPage"].ForeColor==PetTheme.Ink,"Open info page did not update theme");
+  foreach(Control control in form.Controls)Assert(control.Bottom<=form.Height-14,"Settings control overlaps bubble tail");form.Close();}
+  File.WriteAllText(path,"broken-theme");PetTheme.LoadFrom(path);Assert(PetTheme.Mode=="system","Corrupt theme did not fall back to system");
+ }finally{PetTheme.Set(original);if(File.Exists(path))File.Delete(path);}Console.WriteLine("PASS: light/dark/system controls, live nested-page colors, transparent logos, preference round trip and corrupt input.");}
+}

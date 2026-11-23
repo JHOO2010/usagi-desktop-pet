@@ -45,7 +45,7 @@ partial class Usagi {
     void OfferFood(){PlaceSharedFood();}
     void UpdateDetails(double dt,System.Drawing.Point cursor,int mx,int my){
         if(mood==Mood.Sleep){sleepInkPoll-=dt;if(sleepInkPoll<=0){UpdateSleepInk();sleepInkPoll=.6;}}else sleepInkPoll=0;
-        UpdateCloneQueue(dt);TickRap();TickCharacter(dt);UpdateMischief(dt);
+        PollTheme(dt);UpdateCloneQueue(dt);TickRap();TickCharacter(dt);UpdateMischief(dt);
         saveIn-=dt;if(saveIn<=0){SavePreferences();saveIn=10;}
         tripCooldown-=dt;strokeCooldown=Math.Max(0,strokeCooldown-dt);
         for(int i=tracks.Count-1;i>=0;i--){tracks[i].Age+=dt;if(tracks[i].Age>1.1)tracks.RemoveAt(i);}
