@@ -15,6 +15,9 @@ static class SettingArt {
         else if(name=="music"){g.DrawLine(p,8,4,8,15);g.DrawLine(p,8,4,17,2);g.DrawLine(p,17,2,17,13);g.DrawEllipse(p,3,13,5,4);g.DrawEllipse(p,12,11,5,4);}
         else if(name=="update"){g.DrawArc(p,3,3,14,14,35,280);g.DrawLines(p,new[]{new Point(14,2),new Point(17,6),new Point(12,6)});}
         else if(name=="monitor"){g.DrawRectangle(p,2,3,17,12);g.DrawLine(p,10,15,10,19);g.DrawLine(p,6,19,14,19);}
+        else if(name=="portfolio"){g.DrawLines(p,new[]{new Point(10,3),new Point(3,3),new Point(3,18),new Point(18,18),new Point(18,11)});g.DrawLine(p,9,12,18,3);g.DrawLine(p,12,3,18,3);g.DrawLine(p,18,3,18,9);}
+        else if(name=="repository"){g.DrawEllipse(p,2,2,4,4);g.DrawEllipse(p,14,3,4,4);g.DrawEllipse(p,2,15,4,4);g.DrawLine(p,4,6,4,15);g.DrawLines(p,new[]{new Point(16,7),new Point(16,10),new Point(4,13)});}
+        else if(name=="type"){g.DrawLines(p,new[]{new Point(4,2),new Point(12,2),new Point(18,8),new Point(18,19),new Point(4,19),new Point(4,2)});g.DrawLines(p,new[]{new Point(12,2),new Point(12,8),new Point(18,8)});g.DrawLine(p,7,12,14,12);g.DrawLine(p,7,15,14,15);}
         else if(name=="settings"){g.DrawLine(p,3,5,18,5);g.DrawLine(p,3,11,18,11);g.DrawLine(p,3,17,18,17);using(var fill=new SolidBrush(Cream)){g.FillEllipse(fill,6,2,5,6);g.FillEllipse(fill,12,8,5,6);g.FillEllipse(fill,5,14,5,6);}g.DrawEllipse(p,6,2,5,6);g.DrawEllipse(p,12,8,5,6);g.DrawEllipse(p,5,14,5,6);}
         else {g.DrawEllipse(p,2,2,17,17);g.DrawLine(p,10,9,10,14);g.DrawEllipse(p,9.5f,5,1,1);}
     }g.Restore(state);}
@@ -81,26 +84,30 @@ partial class Usagi {
     void ShowSettingsInfo(Form form){
         if(form.Controls.ContainsKey("InfoPage"))return;
         var hidden=new System.Collections.Generic.List<Control>();
-        foreach(Control control in form.Controls)if(control.Top>=48){hidden.Add(control);control.Visible=false;}
-        var page=new GlassPanel{Name="InfoPage",Location=new Point(24,72),Size=new Size(352,form.Height-104),BackColor=Color.Transparent,AutoScroll=false};form.Controls.Add(page);page.BringToFront();
+        foreach(Control control in form.Controls)if(control.Top>=48||control is Label||control is PictureBox){hidden.Add(control);control.Visible=false;}
+        var page=new GlassPanel{Name="InfoPage",Location=new Point(24,26),Size=new Size(352,form.Height-58),BackColor=Color.Transparent,AutoScroll=false};form.Controls.Add(page);page.BringToFront();foreach(Control control in form.Controls)if(control is SettingButton&&control.AccessibleName=="설정 닫기")control.BringToFront();
         var back=new SettingButton{Text="뒤로가기",IconName="back",IconOnly=true,AccessibleName="뒤로가기",Location=new Point(0,0),Size=new Size(32,32)};page.Controls.Add(back);
         back.Click+=(s,e)=>{form.Controls.Remove(page);page.Dispose();foreach(var control in hidden)control.Visible=true;foreach(var control in hidden)if(control is LinkLabel){control.Focus();break;}};
-        var infoFont=new Font(menuFont.FontFamily,9.25f);var brandFont=new Font(menuFont.FontFamily,17);var metaFont=new Font(menuFont.FontFamily,9);page.Disposed+=(s,e)=>{infoFont.Dispose();brandFont.Dispose();metaFont.Dispose();};
+        var infoFont=new Font(menuFont.FontFamily,9);var brandFont=new Font(menuFont.FontFamily,17,FontStyle.Bold);var metaFont=new Font(menuFont.FontFamily,9);page.Disposed+=(s,e)=>{infoFont.Dispose();brandFont.Dispose();metaFont.Dispose();};
         page.Controls.Add(new Label{Text="앱 정보",Location=new Point(45,0),Size=new Size(250,32),TextAlign=ContentAlignment.MiddleLeft,UseCompatibleTextRendering=false});
-        page.Controls.Add(new Label{Text="먼작귀 펫",Location=new Point(0,50),Size=new Size(240,34),Font=brandFont,TextAlign=ContentAlignment.MiddleLeft,UseCompatibleTextRendering=false});
-        page.Controls.Add(new Label{Text="v"+PetUpdates.CurrentVersion.ToString(3),Location=new Point(250,54),Size=new Size(102,28),Font=metaFont,Tag="muted",TextAlign=ContentAlignment.MiddleRight,UseCompatibleTextRendering=false});
-        page.Controls.Add(new Label{Text="작업 표시줄 위의 작은 친구들",Location=new Point(0,88),Size=new Size(352,22),Tag="muted",UseCompatibleTextRendering=false});
-        page.Controls.Add(new Label{Text="만든 사람",Location=new Point(0,119),Size=new Size(64,22),Font=metaFont,Tag="muted",TextAlign=ContentAlignment.MiddleLeft,UseCompatibleTextRendering=false});
-        page.Controls.Add(new Label{Text="JHOO",Location=new Point(68,119),Size=new Size(160,22),TextAlign=ContentAlignment.MiddleLeft,UseCompatibleTextRendering=false});
-        AddSettingsInfoLink(page,"포트폴리오 ↗","https://jhoo-diblisher.pages.dev/",152);
-        AddSettingsInfoLink(page,"GitHub 저장소 ↗","https://github.com/JHOO2010/usagi-desktop-pet",152);var repoLink=page.Controls[page.Controls.Count-1];repoLink.Left=188;repoLink.Width=164;page.Controls[page.Controls.Count-2].Width=160;
-        page.Paint+=(s,e)=>{using(var line=new Pen(SettingArt.Line))e.Graphics.DrawLine(line,0,190,352,190);};
-        page.Controls.Add(new InfoCopy{Name="RightsNotice",Text="비공식 팬 프로젝트 · 공식 서비스와 무관합니다.\n캐릭터·이미지·음성·글꼴의 권리는\n각 권리자에게 있으며, 사용·재배포 시\n해당 권리자의 조건을 따릅니다.",Location=new Point(0,203),Size=new Size(352,68),Font=infoFont,UseCompatibleTextRendering=false});
-        page.Controls.Add(new InfoCopy{LineSpacing=15,Name="LicenseNotice",Text="앱 코드  별도 라이선스 미부여\n메뉴 글꼴  나눔스퀘어라운드 · NAVER\nSIL Open Font License 1.1",Location=new Point(0,279),Size=new Size(352,45),Font=metaFont,Tag="muted",UseCompatibleTextRendering=false});
+        page.Controls.Add(new Label{Text="먼작귀 펫",Location=new Point(76,64),Size=new Size(194,34),Font=brandFont,TextAlign=ContentAlignment.MiddleLeft,UseCompatibleTextRendering=false});
+        page.Controls.Add(new InfoBadge{Text="v"+PetUpdates.CurrentVersion.ToString(3),Location=new Point(277,71),Size=new Size(75,23),Font=metaFont,Tag="muted",TextAlign=ContentAlignment.MiddleCenter,UseCompatibleTextRendering=false});
+        page.Controls.Add(new Label{Text="작업 표시줄 위의 작은 친구들",Location=new Point(76,101),Size=new Size(276,22),Tag="muted",Font=metaFont,UseCompatibleTextRendering=false});
+        var portrait=new PictureBox{Image=CreateCharacterLogo(62,true),Location=new Point(0,61),Size=new Size(62,62),BackColor=Color.Transparent};page.Controls.Add(portrait);page.Disposed+=(s,e)=>portrait.Image.Dispose();
+        page.Controls.Add(new Label{Text="만든 사람",Location=new Point(0,143),Size=new Size(76,26),Font=metaFont,TextAlign=ContentAlignment.MiddleLeft,UseCompatibleTextRendering=false});
+        page.Controls.Add(new InfoBadge{Accent=true,Text="JHOO",Location=new Point(82,143),Size=new Size(72,26),TextAlign=ContentAlignment.MiddleCenter,UseCompatibleTextRendering=false});
+        AddSettingsInfoLink(page,"포트폴리오 ↗","https://jhoo-diblisher.pages.dev/",183);
+        AddSettingsInfoLink(page,"GitHub 저장소 ↗","https://github.com/JHOO2010/usagi-desktop-pet",183);var repoLink=(SettingButton)page.Controls[page.Controls.Count-1];repoLink.Left=182;repoLink.Width=170;repoLink.IconName="repository";((SettingButton)page.Controls[page.Controls.Count-2]).IconName="portfolio";
+        page.Paint+=(s,e)=>{using(var line=new Pen(SettingArt.Line))e.Graphics.DrawLine(line,0,239,352,239);};
+        page.Controls.Add(new InfoCopy{LineSpacing=17,Name="RightsNotice",Text="비공식 팬 프로젝트 · 공식 서비스와 무관합니다.\n캐릭터·이미지·음성·글꼴의 권리는\n각 권리자에게 있으며, 사용·재배포 시\n해당 권리자의 조건을 따릅니다.",Location=new Point(0,254),Size=new Size(352,68),Font=infoFont});
+        var license=new InfoSection{IconName="type",Location=new Point(0,330),Size=new Size(352,42)};page.Controls.Add(license);
+        license.Controls.Add(new InfoCopy{LineSpacing=13,Name="LicenseNotice",Text="앱 코드  별도 라이선스 미부여\n메뉴 글꼴  나눔스퀘어라운드 · NAVER\nSIL Open Font License 1.1",Location=new Point(44,3),Size=new Size(300,39),Font=metaFont,Tag="muted"});
         PetTheme.Apply(page);back.Focus();
     }
-    static void AddSettingsInfoLink(Control page,string text,string url,int top){var link=new LinkLabel{Text=text,Location=new Point(0,top),Size=new Size(344,26),LinkColor=Color.Black,ActiveLinkColor=Color.Black,UseCompatibleTextRendering=true};link.LinkClicked+=(s,e)=>{try{System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url){UseShellExecute=true});}catch(Exception){MessageBox.Show(page,"링크를 열지 못했어요.\n"+url,"정보");}};page.Controls.Add(link);}
+    static void AddSettingsInfoLink(Control page,string text,string url,int top){var link=new SettingButton{Text=text,Location=new Point(0,top),Size=new Size(170,36),AccessibleName=text.Replace(" ↗","")};link.Click+=(s,e)=>{try{System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url){UseShellExecute=true});}catch(Exception){MessageBox.Show(page,"링크를 열지 못했어요.\n"+url,"정보");}};page.Controls.Add(link);}
     void ShowPetSettings(){using(var form=CreateSettingsForm()){bool previous=infoOpen;infoOpen=true;try{form.ShowDialog(this);}finally{infoOpen=previous;}}}
 }
 
 sealed class InfoCopy : Label {internal int LineSpacing=17;protected override void OnPaint(PaintEventArgs e){int y=0;foreach(string line in Text.Split('\n')){TextRenderer.DrawText(e.Graphics,line,Font,new Rectangle(0,y,Width,LineSpacing),ForeColor,TextFormatFlags.NoPadding|TextFormatFlags.SingleLine);y+=LineSpacing;}}}
+sealed class InfoBadge : Label {internal bool Accent;protected override void OnPaint(PaintEventArgs e){e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;using(var path=SettingArt.Round(new Rectangle(0,0,Width-1,Height-1),Height/2-1))using(var fill=new SolidBrush(Accent?PetTheme.Accent:PetTheme.Button))e.Graphics.FillPath(fill,path);TextRenderer.DrawText(e.Graphics,Text,Font,ClientRectangle,Accent?PetTheme.SelectionInk:PetTheme.Muted,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter|TextFormatFlags.SingleLine|TextFormatFlags.NoPadding);}}
+sealed class InfoSection : GlassPanel {internal string IconName;protected override void OnPaint(PaintEventArgs e){var g=e.Graphics;g.SmoothingMode=SmoothingMode.AntiAlias;using(var path=SettingArt.Round(new Rectangle(0,0,Width-1,Height-1),10))using(var fill=new SolidBrush(PetTheme.Dark?Color.FromArgb(22,255,255,255):Color.FromArgb(60,255,255,255)))g.FillPath(fill,path);SettingArt.Icon(g,IconName,11,(Height-21)/2);base.OnPaint(e);}}
