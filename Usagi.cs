@@ -173,7 +173,7 @@ partial class Usagi : Form {
         if(UpdateSpecial(dt))return;
         if(UpdateSocial(dt,cursor,mx*mx+my*my>9))return;
         if(mood==Mood.Fall){fallVelocity+=780*dt;y=Math.Min(floor,y+fallVelocity*dt);if(y>=floor){landing=.26;Change(Mood.Sit);}moving=false;return;}
-        y=floor;
+        y=WalkingFloor();
         if(!edgeTransit&&idleTime>=10&&mood!=Mood.Sleep&&mood!=Mood.Drowsy&&mood!=Mood.Hop){speed=0;Change(Mood.Drowsy);}
         if(mood==Mood.Drowsy&&stateTime>.65){Change(Mood.Sleep);speechTime=0;nextSpeechTime=12+rng.NextDouble()*10;sleepSoundIn=0;}
         if(mood==Mood.Sleep){moving=false;sleepSoundIn-=dt;if(sleepSoundIn<=0){if(!isClone)sounds.PlayAmbient("sleep");sleepSoundIn=9+rng.NextDouble()*8;}return;}
@@ -196,7 +196,7 @@ partial class Usagi : Form {
     Bitmap DrawFrame(){var frame=new Bitmap(Width,Height,PixelFormat.Format32bppArgb);DrawIntoFrame(frame);return frame;}
     void DrawIntoFrame(Bitmap frame){using(var g=Graphics.FromImage(frame)){g.Clear(Color.Transparent);
         g.SmoothingMode=SmoothingMode.AntiAlias;g.InterpolationMode=InterpolationMode.HighQualityBicubic;
-        var clip=PatrolArea();g.SetClip(new RectangleF((float)(clip.Left-Math.Floor(x)),(float)(clip.Top-Math.Floor(y)),clip.Width,clip.Height+8));
+        ClipToMonitors(g);
         g.TranslateTransform((float)(x-Math.Floor(x)),(float)(y-Math.Floor(y)));
         double phase=walkDistance/((character.Key=="usagi"?28:23)*scale)*Math.PI*2;int index=(int)(walkDistance/((character.Key=="usagi"?7:5.75)*scale))%4;
         Bitmap pose=moving?(direction>0?walk[index]:leftWalk[index]):sprite;
