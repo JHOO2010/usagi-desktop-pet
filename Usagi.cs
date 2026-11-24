@@ -121,7 +121,7 @@ partial class Usagi : Form {
         var bits=copy.LockBits(rect,ImageLockMode.ReadOnly,PixelFormat.Format32bppArgb);try{var row=new byte[source.Width*4];for(int j=0;j<source.Height;j++){Marshal.Copy(IntPtr.Add(bits.Scan0,j*bits.Stride),row,0,row.Length);for(int i=0;i<source.Width;i++)if(row[i*4+3]>30){l=Math.Min(l,i);r=Math.Max(r,i);top=Math.Min(top,j);b=Math.Max(b,j);}}}finally{copy.UnlockBits(bits);}
         return r<l?new Bitmap(source):copy.Clone(new Rectangle(l,top,r-l+1,b-top+1),PixelFormat.Format32bppArgb);
     }}
-    void Change(Mood next){if(characterArt!=null&&characterArt.HasActionStrips&&((mood==Mood.Sit&&next==Mood.Walk)||((mood==Mood.Sleep||mood==Mood.Drowsy)&&next==Mood.Stretch)||(mood==Mood.Nuzzle&&next==Mood.Look))){riseNext=next;next=Mood.Rise;}if(mood==Mood.Sleep&&next!=Mood.Sleep)sounds.StopSleep();mood=next;settling=null;stateTime=0;if(next==Mood.Sit)restDuration=1.4+rng.NextDouble()*3.1;else if(next==Mood.Look)restDuration=.8+rng.NextDouble()*1.8;if(next==Mood.Stretch)stretchDuration=.85+rng.NextDouble()*.95;if(next!=Mood.Walk&&next!=Mood.Hop)moving=false;}
+    void Change(Mood next){if(next!=Mood.Fall)throwActive=false;if(characterArt!=null&&characterArt.HasActionStrips&&((mood==Mood.Sit&&next==Mood.Walk)||((mood==Mood.Sleep||mood==Mood.Drowsy)&&next==Mood.Stretch)||(mood==Mood.Nuzzle&&next==Mood.Look))){riseNext=next;next=Mood.Rise;}if(mood==Mood.Sleep&&next!=Mood.Sleep)sounds.StopSleep();mood=next;settling=null;stateTime=0;if(next==Mood.Sit)restDuration=1.4+rng.NextDouble()*3.1;else if(next==Mood.Look)restDuration=.8+rng.NextDouble()*1.8;if(next==Mood.Stretch)stretchDuration=.85+rng.NextDouble()*.95;if(next!=Mood.Walk&&next!=Mood.Hop)moving=false;}
     void Settle(Mood next){if(speed<1){speed=0;Change(next);}else{settling=next;targetSpeed=0;}}
     void Say(string text){DisplaySpeech(CharacterSpeech(text));}
     void DisplaySpeech(string text){words=text;speechTime=1.5+rng.NextDouble()*1.1;nextSpeechTime=7+rng.NextDouble()*3;recent.Enqueue(text);while(recent.Count>4)recent.Dequeue();}
@@ -131,13 +131,13 @@ partial class Usagi : Form {
     void Speak(){Say(Choose(mood==Mood.Sleep?new[]{"…","후웅…","…후우웅"}:moving?walkPhrases:idlePhrases));}
     void Wake(){wakeDelay=-1;CancelSocial();idleTime=0;if(mood==Mood.Sleep||mood==Mood.Drowsy){Change(Mood.Stretch);AutoSayFor("wake","후우웅~");}else Change(Mood.Walk);}
     void Pet(){LeaveRap();CancelSocial();idleTime=0;heartTime=0;EmitHearts(false);sounds.Play("heart");SayFor("pet","푸루야!");}
-    void BeginPointer(System.Drawing.Point point){characterActionTime=0;LeaveRap();LeaveFoodRace();heldTime=0;if(mood==Mood.Sleep||mood==Mood.Drowsy)Wake();CancelSocial();scatterActive=false;foodActive=false;pointerDown=true;dragging=false;dragStart=point;pressX=x;pressY=y;idleTime=0;}
-    void MovePointer(System.Drawing.Point point){if(!pointerDown)return;double dx=point.X-dragStart.X,dy=point.Y-dragStart.Y;
+    void BeginPointer(System.Drawing.Point point){ResetThrowGesture(point,frameClock.Elapsed.TotalSeconds);characterActionTime=0;LeaveRap();LeaveFoodRace();heldTime=0;if(mood==Mood.Sleep||mood==Mood.Drowsy)Wake();CancelSocial();scatterActive=false;foodActive=false;pointerDown=true;dragging=false;dragStart=point;pressX=x;pressY=y;idleTime=0;}
+    void MovePointer(System.Drawing.Point point){if(!pointerDown)return;RecordThrowSample(point,frameClock.Elapsed.TotalSeconds);double dx=point.X-dragStart.X,dy=point.Y-dragStart.Y;
         if(!dragging&&(Math.Abs(dx)>=Math.Max(6,SystemInformation.DragSize.Width/2)||Math.Abs(dy)>=Math.Max(6,SystemInformation.DragSize.Height/2))){dragging=true;paused=false;pendingClicks=0;speed=0;hopHeight=0;Change(Mood.Dragged);if(character.Key!="usagi"){sounds.Play("held");SayFor("held","");}}
         if(dragging){patrolScreen=Screen.FromPoint(point);x=pressX+dx;y=pressY+dy;}
     }
     void EndPointer(double now,System.Drawing.Point point){if(!pointerDown)return;MovePointer(point);bool moved=dragging;pointerDown=false;dragging=false;idleTime=0;
-        if(!moved){RegisterClick(now,point);return;}pendingClicks=0;fallVelocity=0;Change(Mood.Fall);if(rng.Next(3)==0)Say(Choose(hopPhrases));
+        if(!moved){RegisterClick(now,point);return;}pendingClicks=0;if(StartThrowFromGesture(now))return;fallVelocity=0;Change(Mood.Fall);if(rng.Next(3)==0)Say(Choose(hopPhrases));
     }
     void RegisterClick(double now,System.Drawing.Point point){
         double interval=SystemInformation.DoubleClickTime/1000.0;int dx=point.X-lastClickPoint.X,dy=point.Y-lastClickPoint.Y;
@@ -169,6 +169,7 @@ partial class Usagi : Form {
         if(dragging){moving=false;return;}
         if(pointerDown||pendingClicks>0){idleTime=0;return;}
         stateTime+=dt;
+        if(UpdateThrow(dt))return;
         if(UpdateSpecial(dt))return;
         if(UpdateSocial(dt,cursor,mx*mx+my*my>9))return;
         if(mood==Mood.Fall){fallVelocity+=780*dt;y=Math.Min(floor,y+fallVelocity*dt);if(y>=floor){landing=.26;Change(Mood.Sit);}moving=false;return;}
@@ -209,6 +210,7 @@ partial class Usagi : Form {
         if(mood==Mood.Dragged){pose=held[HeldFrame(heldTime)];angle=(float)Math.Sin(heldTime*(heldTime<2.5?10:3))*(heldTime<2.5?2.5f:.7f);}
         if(mood==Mood.Fall||scatterActive)pose=poses[3];
         if(characterArt.HasActionStrips){if(mood==Mood.Rise)pose=characterArt.SitFrames[stateTime<.10?2:stateTime<.23?1:0];else if(mood==Mood.Look)pose=sprite;else if(mood==Mood.Sit)pose=characterArt.SitFrames[stateTime<.10?0:stateTime<.24?1:stateTime>1.5&&t%4.5<.12?3:2];else if(mood==Mood.Drowsy)pose=characterArt.SitFrames[3];else if(mood==Mood.Sleep)pose=characterArt.SleepFrames[(int)(t*.8)%4];else if(mood==Mood.Stretch)pose=characterArt.StretchFrames[Math.Min(3,(int)(stateTime/Math.Max(.1,stretchDuration)*4))];else if(mood==Mood.Hop)pose=characterArt.JumpFrames[stateTime<.1?0:hopVelocity>0?1:hopHeight>10?2:3];}
+        if(throwActive){pose=characterArt.HasActionStrips?characterArt.JumpFrames[throwVY<0?1:2]:poses[3];angle=(float)Math.Max(-18,Math.Min(18,throwVX/50));}
         float factor=68*scale/headWidths[pose];if(scatterActive){double appear=Math.Min(1,scatterTime/.16);factor*=(float)(.4+.6*(1-Math.Pow(1-appear,3)));angle=(float)(scatterVX/32*Math.Sin(Math.Min(1,scatterTime)*Math.PI));}
         float h=pose.Height*factor,width=pose.Width*factor,bottom=Height-10-bob-(float)hopHeight;
         float squash=landing>0?(float)Math.Sin(landing/.26*Math.PI)*.1f:0;

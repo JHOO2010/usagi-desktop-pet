@@ -1,5 +1,5 @@
 #ifndef AppRelease
-#define AppRelease "2.4.20"
+#define AppRelease "2.4.21"
 #endif
 [Setup]
 AppId={{55757449-1D38-42D2-A5FA-2C4EAE3A3462}
