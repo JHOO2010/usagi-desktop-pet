@@ -85,15 +85,22 @@ partial class Usagi {
         var page=new GlassPanel{Name="InfoPage",Location=new Point(24,72),Size=new Size(352,form.Height-104),BackColor=Color.Transparent,AutoScroll=false};form.Controls.Add(page);page.BringToFront();
         var back=new SettingButton{Text="뒤로가기",IconName="back",IconOnly=true,AccessibleName="뒤로가기",Location=new Point(0,0),Size=new Size(32,32)};page.Controls.Add(back);
         back.Click+=(s,e)=>{form.Controls.Remove(page);page.Dispose();foreach(var control in hidden)control.Visible=true;foreach(var control in hidden)if(control is LinkLabel){control.Focus();break;}};
-        var infoFont=new Font(menuFont.FontFamily,9.25f);page.Disposed+=(s,e)=>infoFont.Dispose();
-        page.Controls.Add(new Label{Text="정보",Location=new Point(45,0),Size=new Size(250,32),TextAlign=ContentAlignment.MiddleLeft,UseCompatibleTextRendering=false});
-        page.Controls.Add(new Label{Text="먼작귀 펫  v"+PetUpdates.CurrentVersion.ToString(3),Location=new Point(0,48),Size=new Size(344,25),UseCompatibleTextRendering=true});
-        page.Controls.Add(new Label{Text="만든 사람  JHOO",Location=new Point(0,77),Size=new Size(344,23),Tag="muted",UseCompatibleTextRendering=true});
-        AddSettingsInfoLink(page,"포트폴리오","https://jhoo-diblisher.pages.dev/",112);
-        AddSettingsInfoLink(page,"GitHub 저장소","https://github.com/JHOO2010/usagi-desktop-pet",112);var repoLink=page.Controls[page.Controls.Count-1];repoLink.Left=192;repoLink.Width=152;page.Controls[page.Controls.Count-2].Width=128;
-        page.Controls.Add(new Label{Name="RightsNotice",Text="비공식 팬 프로젝트입니다.\n공식 서비스와는 관계가 없습니다.\n\n캐릭터·이미지·음성·글꼴의 권리는\n각 권리자에게 있습니다.\n사용·재배포 시 권리자의 조건을 따릅니다.",Location=new Point(0,164),Size=new Size(344,100),Font=infoFont,UseCompatibleTextRendering=true});
-        page.Controls.Add(new Label{Name="LicenseNotice",Text="앱 코드  별도 라이선스 미부여\n메뉴 글꼴  나눔스퀘어라운드 · NAVER\nSIL Open Font License 1.1",Location=new Point(0,276),Size=new Size(344,48),Font=infoFont,Tag="muted",UseCompatibleTextRendering=true});PetTheme.Apply(page);back.Focus();
+        var infoFont=new Font(menuFont.FontFamily,9.25f);var brandFont=new Font(menuFont.FontFamily,17);var metaFont=new Font(menuFont.FontFamily,9);page.Disposed+=(s,e)=>{infoFont.Dispose();brandFont.Dispose();metaFont.Dispose();};
+        page.Controls.Add(new Label{Text="앱 정보",Location=new Point(45,0),Size=new Size(250,32),TextAlign=ContentAlignment.MiddleLeft,UseCompatibleTextRendering=false});
+        page.Controls.Add(new Label{Text="먼작귀 펫",Location=new Point(0,50),Size=new Size(240,34),Font=brandFont,TextAlign=ContentAlignment.MiddleLeft,UseCompatibleTextRendering=false});
+        page.Controls.Add(new Label{Text="v"+PetUpdates.CurrentVersion.ToString(3),Location=new Point(250,54),Size=new Size(102,28),Font=metaFont,Tag="muted",TextAlign=ContentAlignment.MiddleRight,UseCompatibleTextRendering=false});
+        page.Controls.Add(new Label{Text="작업 표시줄 위의 작은 친구들",Location=new Point(0,88),Size=new Size(352,22),Tag="muted",UseCompatibleTextRendering=false});
+        page.Controls.Add(new Label{Text="만든 사람",Location=new Point(0,119),Size=new Size(64,22),Font=metaFont,Tag="muted",TextAlign=ContentAlignment.MiddleLeft,UseCompatibleTextRendering=false});
+        page.Controls.Add(new Label{Text="JHOO",Location=new Point(68,119),Size=new Size(160,22),TextAlign=ContentAlignment.MiddleLeft,UseCompatibleTextRendering=false});
+        AddSettingsInfoLink(page,"포트폴리오 ↗","https://jhoo-diblisher.pages.dev/",152);
+        AddSettingsInfoLink(page,"GitHub 저장소 ↗","https://github.com/JHOO2010/usagi-desktop-pet",152);var repoLink=page.Controls[page.Controls.Count-1];repoLink.Left=188;repoLink.Width=164;page.Controls[page.Controls.Count-2].Width=160;
+        page.Paint+=(s,e)=>{using(var line=new Pen(SettingArt.Line))e.Graphics.DrawLine(line,0,190,352,190);};
+        page.Controls.Add(new InfoCopy{Name="RightsNotice",Text="비공식 팬 프로젝트 · 공식 서비스와 무관합니다.\n캐릭터·이미지·음성·글꼴의 권리는\n각 권리자에게 있으며, 사용·재배포 시\n해당 권리자의 조건을 따릅니다.",Location=new Point(0,203),Size=new Size(352,68),Font=infoFont,UseCompatibleTextRendering=false});
+        page.Controls.Add(new InfoCopy{LineSpacing=15,Name="LicenseNotice",Text="앱 코드  별도 라이선스 미부여\n메뉴 글꼴  나눔스퀘어라운드 · NAVER\nSIL Open Font License 1.1",Location=new Point(0,279),Size=new Size(352,45),Font=metaFont,Tag="muted",UseCompatibleTextRendering=false});
+        PetTheme.Apply(page);back.Focus();
     }
     static void AddSettingsInfoLink(Control page,string text,string url,int top){var link=new LinkLabel{Text=text,Location=new Point(0,top),Size=new Size(344,26),LinkColor=Color.Black,ActiveLinkColor=Color.Black,UseCompatibleTextRendering=true};link.LinkClicked+=(s,e)=>{try{System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url){UseShellExecute=true});}catch(Exception){MessageBox.Show(page,"링크를 열지 못했어요.\n"+url,"정보");}};page.Controls.Add(link);}
     void ShowPetSettings(){using(var form=CreateSettingsForm()){bool previous=infoOpen;infoOpen=true;try{form.ShowDialog(this);}finally{infoOpen=previous;}}}
 }
+
+sealed class InfoCopy : Label {internal int LineSpacing=17;protected override void OnPaint(PaintEventArgs e){int y=0;foreach(string line in Text.Split('\n')){TextRenderer.DrawText(e.Graphics,line,Font,new Rectangle(0,y,Width,LineSpacing),ForeColor,TextFormatFlags.NoPadding|TextFormatFlags.SingleLine);y+=LineSpacing;}}}
