@@ -210,7 +210,7 @@ partial class Usagi : Form {
         if(mood==Mood.Dragged){pose=held[HeldFrame(heldTime)];angle=(float)Math.Sin(heldTime*(heldTime<2.5?10:3))*(heldTime<2.5?2.5f:.7f);}
         if(mood==Mood.Fall||scatterActive)pose=poses[3];
         if(characterArt.HasActionStrips){if(mood==Mood.Rise)pose=characterArt.SitFrames[stateTime<.10?2:stateTime<.23?1:0];else if(mood==Mood.Look)pose=sprite;else if(mood==Mood.Sit)pose=characterArt.SitFrames[stateTime<.10?0:stateTime<.24?1:stateTime>1.5&&t%4.5<.12?3:2];else if(mood==Mood.Drowsy)pose=characterArt.SitFrames[3];else if(mood==Mood.Sleep)pose=characterArt.SleepFrames[(int)(t*.8)%4];else if(mood==Mood.Stretch)pose=characterArt.StretchFrames[Math.Min(3,(int)(stateTime/Math.Max(.1,stretchDuration)*4))];else if(mood==Mood.Hop)pose=characterArt.JumpFrames[stateTime<.1?0:hopVelocity>0?1:hopHeight>10?2:3];}
-        if(throwActive){pose=characterArt.HasActionStrips?characterArt.JumpFrames[throwVY<0?1:2]:poses[3];angle=(float)Math.Max(-18,Math.Min(18,throwVX/50));}
+        if(throwActive){pose=characterArt.HasActionStrips?characterArt.JumpFrames[throwVY<0?1:2]:poses[3];angle=(float)throwLean;}else if(mood==Mood.Sit)angle+=(float)throwLean;
         float factor=68*scale/headWidths[pose];if(scatterActive){double appear=Math.Min(1,scatterTime/.16);factor*=(float)(.4+.6*(1-Math.Pow(1-appear,3)));angle=(float)(scatterVX/32*Math.Sin(Math.Min(1,scatterTime)*Math.PI));}
         float h=pose.Height*factor,width=pose.Width*factor,bottom=Height-10-bob-(float)hopHeight;
         float squash=landing>0?(float)Math.Sin(landing/.26*Math.PI)*.1f:0;

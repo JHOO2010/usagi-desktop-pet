@@ -5,9 +5,9 @@ using System.Collections.Generic;
 partial class Usagi {
     struct DragSample {internal Point Point;internal double Time;}
     readonly List<DragSample> throwSamples=new List<DragSample>();
-    bool throwActive;double throwVX,throwVY,throwAge;int throwBounces;
+    bool throwActive;double throwVX,throwVY,throwAge,throwLean;int throwBounces;
 
-    void ResetThrowGesture(Point point,double now){throwActive=false;throwVX=throwVY=0;throwSamples.Clear();RecordThrowSample(point,now);}
+    void ResetThrowGesture(Point point,double now){throwActive=false;throwVX=throwVY=throwLean=0;throwSamples.Clear();RecordThrowSample(point,now);}
     void RecordThrowSample(Point point,double now){
         if(throwSamples.Count>0&&now<throwSamples[throwSamples.Count-1].Time)throwSamples.Clear();
         while(throwSamples.Count>0&&(now-throwSamples[0].Time>.11||throwSamples.Count>=64))throwSamples.RemoveAt(0);
@@ -30,9 +30,10 @@ partial class Usagi {
         if(Math.Abs(throwVX)>20)direction=throwVX>0?1:-1;Change(Mood.Fall);return true;
     }
     bool UpdateThrow(double dt){
-        if(!throwActive)return false;
+        if(!throwActive){throwLean*=Math.Exp(-dt/.075);if(Math.Abs(throwLean)<.03)throwLean=0;return false;}
         throwAge+=dt;var area=PatrolArea();double floor=area.Bottom-Height+8;
-        double left=area.Left-Width/2+64*scale,right=area.Right-Width/2-64*scale;
+        double inset=(64+Math.Abs(throwLean)*.7)*scale;
+        double left=area.Left-Width/2+inset,right=area.Right-Width/2-inset;
         double ceiling=Math.Min(floor,area.Top-petTop+8);moving=false;idleTime=0;
         int steps=Math.Max(1,(int)Math.Ceiling(dt*240));double h=dt/steps;
         for(int i=0;i<steps;i++){
@@ -47,6 +48,8 @@ partial class Usagi {
                 if(throwVY>180&&throwBounces<1){throwVY=-Math.Min(220,throwVY*.28);throwVX*=.7;throwBounces++;}
                 else throwVY=0;
             }
+            double target=Math.Max(-26,Math.Min(26,throwVX/32));if(y>=floor-.001&&throwVY==0)target*=.45;
+            throwLean+=(target-throwLean)*(1-Math.Exp(-h/.075));
         }
         if(Math.Abs(throwVX)>20)direction=throwVX>0?1:-1;
         if(y>=floor-.001&&throwVY==0&&(Math.Abs(throwVX)<12||throwAge>5)){
