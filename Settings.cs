@@ -97,15 +97,13 @@ partial class Usagi {
         page.Controls.Add(new InfoBadge{Text="v"+PetUpdates.CurrentVersion.ToString(3),Location=new Point(274,58),Size=new Size(70,22),Font=metaFont,Tag="muted",TextAlign=ContentAlignment.MiddleCenter,UseCompatibleTextRendering=false});
         page.Controls.Add(new InfoLabel{Text="작업 표시줄 위의 작은 친구들",Location=new Point(70,87),Size=new Size(274,22),Tag="muted",Font=metaFont,UseCompatibleTextRendering=false});
         var portrait=new PictureBox{Image=CreateCharacterLogo(56,false),Location=new Point(0,49),Size=new Size(56,56),BackColor=Color.Transparent};page.Controls.Add(portrait);page.Disposed+=(s,e)=>portrait.Image.Dispose();
-        page.Controls.Add(new InfoLabel{Text="만든 사람",Location=new Point(0,124),Size=new Size(76,26),Font=metaFont,TextAlign=ContentAlignment.MiddleLeft,UseCompatibleTextRendering=false});
-        page.Controls.Add(new InfoBadge{Accent=true,Text="JHOO",Location=new Point(82,124),Size=new Size(72,24),TextAlign=ContentAlignment.MiddleCenter,UseCompatibleTextRendering=false});
-        AddSettingsInfoLink(page,"포트폴리오 ↗","https://jhoo-diblisher.pages.dev/",162);
-        AddSettingsInfoLink(page,"GitHub 저장소 ↗","https://github.com/JHOO2010/usagi-desktop-pet",162);var repoLink=(SettingButton)page.Controls[page.Controls.Count-1];repoLink.Left=180;repoLink.Width=164;repoLink.IconName="repository";((SettingButton)page.Controls[page.Controls.Count-2]).IconName="portfolio";
-        page.Paint+=(s,e)=>{using(var line=new Pen(SettingArt.Line))e.Graphics.DrawLine(line,0,216,page.Width,216);};
-        var rights=new InfoCopy{WrapWords=true,LineSpacing=17,Name="RightsNotice",Text="비공식 팬 프로젝트 / 공식 서비스와 무관합니다.\n캐릭터, 이미지, 음성, 글꼴의 권리는 각 권리자에게 있으며, 사용 / 재배포 시 해당 권리자의 조건을 따릅니다.",Location=new Point(0,234),Size=new Size(width-56,68),Font=infoFont};rights.Height=rights.ContentHeight;page.Controls.Add(rights);
-        var license=new InfoSection{IconName="type",Location=new Point(0,Math.Min(page.Height-54,rights.Bottom+18)),Size=new Size(width-56,54)};page.Controls.Add(license);
-        license.Controls.Add(new InfoCopy{LineSpacing=18,Name="LicenseTitle",Text="앱 코드 별도 라이선스 미부여",Location=new Point(38,10),Size=new Size(width-106,18),Font=licenseTitleFont,UseCompatibleTextRendering=false});
-        license.Controls.Add(new InfoCopy{FitWidth=true,LineSpacing=15,Name="LicenseNotice",Text="메뉴 글꼴 나눔스퀘어라운드 · NAVER / SIL Open Font License 1.1",Location=new Point(38,30),Size=new Size(width-106,15),Font=licenseFont,Tag="muted",UseCompatibleTextRendering=false});
+        AddSettingsInfoLink(page,"포트폴리오 ↗","https://jhoo-diblisher.pages.dev/",124);
+        AddSettingsInfoLink(page,"GitHub 저장소 ↗","https://github.com/JHOO2010/usagi-desktop-pet",124);var repoLink=(SettingButton)page.Controls[page.Controls.Count-1];repoLink.Left=180;repoLink.Width=164;repoLink.IconName="repository";((SettingButton)page.Controls[page.Controls.Count-2]).IconName="portfolio";
+        page.Paint+=(s,e)=>{using(var line=new Pen(SettingArt.Line))e.Graphics.DrawLine(line,0,178,page.Width,178);};
+        var rights=new InfoCopy{WrapWords=true,LineSpacing=17,Name="RightsNotice",Text="비공식 팬 프로젝트 / 공식 서비스와 무관합니다.\n캐릭터, 이미지, 음성, 글꼴의 권리는 각 권리자에게 있으며, 사용 / 재배포 시 해당 권리자의 조건을 따릅니다.",Location=new Point(0,196),Size=new Size(width-56,68),Font=infoFont};rights.Height=rights.ContentHeight;page.Controls.Add(rights);
+        var license=new InfoSection{IconName="type",Location=new Point(0,Math.Min(page.Height-64,rights.Bottom+18)),Size=new Size(width-56,64)};page.Controls.Add(license);
+        license.Controls.Add(new InfoCopy{LineSpacing=18,Name="LicenseTitle",Text="앱 코드 별도 라이선스 미부여",Location=new Point(38,15),Size=new Size(width-106,18),Font=licenseTitleFont,UseCompatibleTextRendering=false});
+        license.Controls.Add(new InfoCopy{FitWidth=true,LineSpacing=15,Name="LicenseNotice",Text="메뉴 글꼴 나눔스퀘어라운드 · NAVER / SIL Open Font License 1.1",Location=new Point(38,35),Size=new Size(width-106,15),Font=licenseFont,Tag="muted",UseCompatibleTextRendering=false});
         PetTheme.Apply(page);back.Focus();
     }
     static void AddSettingsInfoLink(Control page,string text,string url,int top){var link=new SettingButton{SmoothText=true,Text=text,Location=new Point(0,top),Size=new Size(164,36),AccessibleName=text.Replace(" ↗","")};link.Click+=(s,e)=>{try{System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url){UseShellExecute=true});}catch(Exception){MessageBox.Show(page,"링크를 열지 못했어요.\n"+url,"정보");}};page.Controls.Add(link);}
